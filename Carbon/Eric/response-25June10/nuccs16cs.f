@@ -21,7 +21,7 @@ CCCCC  Cross section is dsig/domega/dE in ub                                    
       REAL*8 x,tot,epnuc
 
 
-      smwid = 0.0035   !!! GeV, Use for Barreau data 
+c      smwid = 0.0035   !!! GeV, Use for Barreau data 
 c      smwid = 0.00048  !!! Use for Yamaguchi data
 c      smwid = 0.00085  !!! Use for Ryan data
 c       smwid = 0.00018           !!! Bates
@@ -30,7 +30,9 @@ c      smwid = 0.00046  !!! Use for LEDEX 0.685 GeV
 c     smwid = 0.00041  !!! Use for LEDEX 0.362 GeV
 c      smwid = 0.00065  !!! Use for Crannell      
 c     smwid = 0.00025   !!! Yamaguchi fine binning
-         
+      smwid = 0.001   !!!  New value for Jan05
+
+        
       width = sqrt(smwid*smwid+wid(state)*wid(state))
       
       norm = width*sqrt(pi) 

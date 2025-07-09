@@ -25,7 +25,9 @@ CCCCC  Cross section is dsig/domega/dE in ub                                    
       qv2 = q2+nu*nu
       
 c      smwid = 0.0035            !!! GeV, Use for Barreau data
-      smwid = 0.00048  !!! Use for Yamaguchi data
+      smwid = 0.001  !!! Ziggy added
+
+c      smwid = 0.00048  !!! Use for Yamaguchi data
 
       width = sqrt(smwid*smwid+wid(state)*wid(state))
       

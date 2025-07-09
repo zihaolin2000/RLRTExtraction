@@ -34,10 +34,10 @@ c
       V0  = (3./2.)*ALPHA*HBARC*(Z-1.)/R0  ! in GeV
 
       ! Average potential
-      V  = C_ASTE*V0      ! from Eur. Phys. J. A26 (2005) 167
+      ! V  = C_ASTE*V0      ! from Eur. Phys. J. A26 (2005) 167
       
       ! Ziggy added May 19: use experimentally determined Veff=3.1MeV
-      !V = 0.0031
+      V = 0.0031
 
 c      write(6,*) V
       
