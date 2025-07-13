@@ -31,6 +31,7 @@ c       smwid = 0.000625  !!! Use for Crannell 250 MeV  (0.25%)
 c      smwid = 0.0015    !!!  Use for Crannell 600 MeV (0.25%)
 
       smwid = 0.001   !!!  New value for Jan05
+c      smwid = 0.002   !!!  New value for 25July12
 
 c      smwid = 0.00025   !!! Yamaguchi hi res
       

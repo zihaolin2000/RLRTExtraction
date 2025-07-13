@@ -31,6 +31,7 @@ c     smwid = 0.00041  !!! Use for LEDEX 0.362 GeV
 c      smwid = 0.00065  !!! Use for Crannell      
 c     smwid = 0.00025   !!! Yamaguchi fine binning
       smwid = 0.001   !!!  New value for Jan05
+c      smwid = 0.002   !!!  New value for 25July12
 
         
       width = sqrt(smwid*smwid+wid(state)*wid(state))
