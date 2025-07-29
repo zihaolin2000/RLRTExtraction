@@ -168,11 +168,13 @@ c           if(q2.GT.0.3) nuccs = 0.0
         
          
 
-         if(ep.GT.0.01.AND.w2.LT.40.) then
-            write(6,2000) e,nu,ep,theta,nu-nuel,w2,q2,sigtot,sigqe,sigie,sigmec,nuccstot,signonuc 
-     
-         endif
-
+        ! if(ep.GT.0.01.AND.w2.LT.40.) then
+        !   write(6,2000) e,nu,ep,theta,nu-nuel,w2,q2,sigtot,sigqe,sigie, sigmec,nuccstot,signonuc
+        ! endif
+        if(ep.GT.0.01.AND.w2.LT.40.) then
+          write(6,2000) e,nu,ep,theta,nu-nuel,w2,q2,sigtot,sigqe,sigie, 
+     &         sigmec,nuccstot,signonuc
+        endif
       enddo
 
 
