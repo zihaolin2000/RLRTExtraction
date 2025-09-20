@@ -144,10 +144,10 @@ c        endif
 c        write(6, 2000) i, RTTOT, RLTOT, (RTQE+RTIE+RTE), (RLQE+RLIE+RLE) 
 c        write(6,2000) qv,q2,ex,nu,RTTOT,RLTOT,RTQE,RLQE,RTIE,RLIE,RTE,RLE,RTNS,RLNS          
         
-        if(q2.GT.0.0) 
-     &       write(6,2000) qv,q2,ex,nu,RTTOT,RLTOT,RTQE,RLQE,RTIE,RLIE,
-     &                      RTE,RLE,RTNS,RLNS   
-
+!         if(q2.GT.0.0) 
+!      &       write(6,2000) qv,q2,ex,nu,RTTOT,RLTOT,RTQE,RLQE,RTIE,RLIE,
+!      &                      RTE,RLE,RTNS,RLNS   
+        write(6, 2000) i, RTTOT, RLTOT, (RTQE+RTIE+RTE), (RLQE+RLIE+RLE) 
 c         if(q2.LE.0.0) 
 c     &       write(6,2000) qv,q2,ex,nu,RTTOT,RLTOT,RTQE,RLQE,RTIE,RLIE,
 c     &                      RTE,RLE,RTNS,RLNS   
@@ -158,8 +158,8 @@ c        i = i+1
 
 c 2000  format(4f9.5,10E11.3)
 c 2000  format(I5,2E11.3)      
-c 2000  format(1I5,4E15.7)
- 2000  format(4f9.5,10E15.7)
+ 2000  format(1I5,4E15.7)
+!  2000  format(4f9.5,10E15.7)
       close(UNIT=unit)
       return
       end
