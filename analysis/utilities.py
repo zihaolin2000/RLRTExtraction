@@ -28,46 +28,41 @@ def v_coulomb(a : int = 12, z : int = 6) -> float:
 
     return v
 
-def quasi_deuteron(ex : ArrayLike) -> ArrayLike: # ex in GeV; return GD cross-section: GeV^-2
-    ex = ex * 1e3
-    def pauli_blocking(ex): # ex in MeV
-        if ex <=20:
-            return np.exp(-73.3/ex)
-        elif 20 < ex <=140: 
-            return 8.3714e-2 - 9.8343e-3 * ex + 4.1222e-4 * ex**2 - 3.4762e-6 * ex**3 + 9.3537e-9 * ex**4
-        else:
-            return np.exp(-24.2/ex)
-    N=6
-    A=12
-    Z=6
-    if ex <2.224:
+def pauli_blocking(ex : float) -> float:
+    # ex in MeV
+    if ex <=20:
+        return np.exp(-73.3/ex)
+    elif 20 < ex <= 140: 
+        return 8.3714e-2 - 9.8343e-3 * ex + 4.1222e-4 * ex**2 - 3.4762e-6 * ex**3 + 9.3537e-9 * ex**4
+    else:
+        return np.exp(-24.2/ex)
+
+def quasi_deuteron(ex : float, n : int = 6, a : int = 12, z : int = 6) -> float: # ex in GeV; return GD cross-section: GeV^-2
+    ex = ex * 1e3 # convert ex to MeV
+    if ex < 2.224:
         return 0
     else:    
-        sigma = 397.8*(N*Z/A)*((ex-2.224)**(3/2))*(ex**-3)*pauli_blocking(ex) # in mb
+        sigma = 397.8 * (n * z / a) * ((ex - 2.224)**(3/2)) * (ex**-3) * pauli_blocking(ex) # in mb
         return sigma * 0.1 * 0.1975**-2 # in GeV^-2
 
-def dipole_form(q2 : ArrayLike) -> ArrayLike: # Q2 in GeV^2; return dipole form unitless
-    # return 1/((1+Q2/0.71)**2)
-    return 1 / ((1 + q2 / 0.5)**5) # new value 2025 July 18
 
-def quasi_deuteron_suppression(nu : ArrayLike, center : float = 0.12, width : float = 0.005) -> ArrayLike: # nu in GeV
-    return 1 / (np.exp((nu - center) / width) + 1)
+def dipole_form(q2s : ArrayLike) -> ArrayLike: # Q2 in GeV^2; return dipole form unitless
+    return 1 / ((1 + np.array(q2s) / 0.5)**5) # new value 2025 July 18
+
+
+def quasi_deuteron_suppression(nus : ArrayLike, center : float = 0.12, width : float = 0.005) -> ArrayLike: # nu in GeV
+    return 1 / (np.exp((np.array(nus) - center) / width) + 1)
+
 
 def rt_quasi_deuteron(nus : ArrayLike, q2s : ArrayLike, exs : ArrayLike) -> ArrayLike: # RT in MeV^-1, ex in GeV
-    # use quasi deuteron RT
-    QDs=[]            
-    # for ex in ChristyBodekFit['ex']*1e3: # ex in MeV
-    for ex in exs: # ex in MeV
+    QDs=[]
+    for ex in exs:
         QDs.append(quasi_deuteron(ex))
     QDs = np.array(QDs)
-    # GEs = dipole_form(ChristyBodekFit['q2'])
     GEs = dipole_form(q2s)
     GEs = np.array(GEs)
-    # ChristyBodekFit['RTQD']=GEs**2 * QDs * ChristyBodekFit['nu']/(2*(np.pi**2)*alpha_fine)
-    RTQD = GEs**2 * QDs * nus/(2*(np.pi**2)*ALPHA_FINE)
-    # RTQD = RTQD * quasi_deuteron_suppression(nu=nus)
-    RTQD = RTQD * 1.5 * quasi_deuteron_suppression(nu=nus) # added 25 Sep 23
-
+    RTQD = GEs**2 * QDs * np.array(nus) / (2 * (np.pi**2) * ALPHA_FINE)
+    RTQD = RTQD * 1.5 * quasi_deuteron_suppression(nus) # added 2025 Sep 23
     return RTQD*1e-3 # in MeV-1
 
 def ratio_interpolated(x1, y1, x2, y2, eps=0.0, shrink=0.98):
