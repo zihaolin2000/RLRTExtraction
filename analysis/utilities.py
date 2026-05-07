@@ -50,7 +50,7 @@ def dipole_form(q2s : ArrayLike) -> ArrayLike: # Q2 in GeV^2; return dipole form
     # return 1 / ((1 + np.array(q2s) / 0.5)**5) # new value 2025 July 18
     return 1 / ((1 + np.asarray(q2s) / 0.5)**5) # new value 2025 July 18
 
-def fd_distribution(xs : ArrayLike, center : float = 0.12, width : float = 0.005) -> ArrayLike: # nu in GeV
+def special_sigmoid(xs : ArrayLike, center : float = 0.12, width : float = 0.005) -> ArrayLike:
     z = (np.asarray(xs) - center) / width
     return expit(-z)
 
@@ -65,7 +65,7 @@ def rt_quasi_deuteron(nus : ArrayLike, q2s : ArrayLike, exs : ArrayLike) -> Arra
     GEs = np.asarray(GEs)
     # RTQD = GEs**2 * QDs * np.array(nus) / (2 * (np.pi**2) * ALPHA_FINE)
     RTQD = GEs**2 * QDs * np.asarray(nus) / (2 * (np.pi**2) * ALPHA_FINE)
-    RTQD = RTQD * 1.5 * fd_distribution(nus) # added 2025 Sep 23
+    RTQD = RTQD * 1.5 * special_sigmoid(nus) # added 2025 Sep 23
     return RTQD*1e-3 # in MeV-1
 
 def ratio_interpolated(x1, y1, x2, y2, eps=0.0, shrink=0.98):
