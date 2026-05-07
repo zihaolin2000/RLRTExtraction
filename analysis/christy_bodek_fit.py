@@ -1047,7 +1047,7 @@ OUTPUT_COLUMNS = [
     "qv", "q2", "ex", "nu",
     "rttot", "rltot", "rtqe", "rlqe",
     "rtie", "rlie", "rte", "rle",
-    "rtns", "rlns",
+    "rtns", "rlns"
 ]
 
 
@@ -1135,7 +1135,7 @@ def calculate_response_point(qv: float, nu: float, *, a: float = 12.0, z: float 
         "rte": rte,
         "rle": rle,
         "rtns": rtns,
-        "rlns": rlns,
+        "rlns": rlns
     }
 
 
