@@ -1083,34 +1083,38 @@ def calculate_response_point(qv: float, nu: float, *, a: float = 12.0, z: float 
     w2 = MP_MAIN * MP_MAIN + 2.0 * MP_MAIN * nu - q2
     xb = q2 / (2.0 * MP_MAIN * nu)
 
+    # total, except nuclear states
     f1, fl = csfitcomp(w2, q2, a, z, xvalc, 1)
     fl = 2.0 * xb * fl
     rttot = 2.0 / MP_MAIN * f1 / 1000.0
     rltot = qv * qv / q2 / 2.0 / MP_MAIN / xb * fl / 1000.0
 
+    # quasi elastic peak
     f1, fl = csfitcomp(w2, q2, a, z, xvalc, 2)
     fl = 2.0 * xb * fl
     rtqe = 2.0 / MP_MAIN * f1 / 1000.0
     rlqe = qv * qv / q2 / 2.0 / MP_MAIN / xb * fl / 1000.0
 
+    # inelastic peak
     f1, fl = csfitcomp(w2, q2, a, z, xvalc, 3)
     fl = 2.0 * xb * fl
     rtie = 2.0 / MP_MAIN * f1 / 1000.0
     rlie = qv * qv / q2 / 2.0 / MP_MAIN / xb * fl / 1000.0
 
+    # transverse enhancement
     f1, fl = csfitcomp(w2, q2, a, z, xvalc, 4)
     fl = 2.0 * xb * fl
     rte = 2.0 / MP_MAIN * f1 / 1000.0
     rle = 0.0
     _ = fl
 
+    # nuclear states
     flns = 0.0
     f1ns = 0.0
     for state in range(2, 23):
         f1_state, fl_state = nuc12sf(z, a, nu, q2, state)
         flns += fl_state
         f1ns += f1_state
-
     rtns = 2.0 / MP_MAIN * f1ns / 1000.0
     rlns = qv * qv / q2 / 2.0 / MP_MAIN / xb * flns / 1000.0
     if rlns <= 1.0e-40:
