@@ -42,7 +42,7 @@ ERRORBAR_STYLES = {
     'Buki':{'color':'blue','markersize':0, 'capsize':0, 'lw':1, 'fmt':'D', 'elinewidth':1, 'alpha':0.5, 'zorder':1},
     'Sheren':{'ecolor':'deepskyblue','markersize':0, 'capsize':0, 'lw':1, 'fmt':'D', 'elinewidth':1, 'alpha':0.5, 'zorder':1},
     'Baran':{'ecolor':'gray','markersize':0, 'capsize':0, 'lw':1, 'fmt':'D', 'elinewidth':1, 'alpha':0.5, 'zorder':1},
-    'Photo-production':{}
+    'Photo-production':{'color':'lime','markersize':0, 'capsize':0, 'lw':1, 'fmt':'D', 'elinewidth':1, 'alpha':0.5, 'zorder':1}
 }
 
 # line plotting styles
@@ -54,7 +54,7 @@ LINE_STYLES = {
     'SuSAv2':{'zorder':-1},
     'NuWro-SF':{'color':'violet','lw':2,'linestyle':'-', 'zorder':-1},
     'NuWro-SF-FSI':{'color':'green','lw':2,'linestyle':'-', 'zorder':-1},
-    'ACHILLES':{'color':'blue','linestyle':'dotted','lw':2.5, 'zorder':-1},
+    'ACHILLES':{'color':'blue','linestyle':'dotted','lw':2.5, 'zorder':-1}
 }
 
 # plot vertical dash lines at invariant mass w = 0.93, 1.07, 1.23 GeV/c^2
@@ -139,14 +139,12 @@ def plot_response_qvbin(df_this_analysis : pd.DataFrame, qvcenters : list[float]
 
         # plot Christy Bodek fit
         # 25 Sep 25: shift inelastic to left by 18 MeV; 25 July 18: RT quasi deuteron added
+        #  FIXME: 26 May 7 inelastic peak shift is removed for now. address later.
         ChristyBodekFit = sheet_CBfit.loc[sheet_CBfit['qv']==qvcenter].copy()
-        f_RTIE = interp1d(ChristyBodekFit['nu'], ChristyBodekFit['rtie'], kind="linear", bounds_error=False, fill_value=0.0)
-        ChristyBodekFit['rtie'] = 1.06*f_RTIE(ChristyBodekFit['nu'] - 0.018) # shift the peak
-        ax_rl.plot(ChristyBodekFit['nu'],(ChristyBodekFit["rlqe"]+ChristyBodekFit["rlie"]+ChristyBodekFit["rle"]+ChristyBodekFit["rlns"])*1e3,color='black',label="$R_L$(total), $R_T$(total) Christy-Bodek-2024", linestyle='solid',lw=0.8, zorder=0)
-        ax_rt.plot(ChristyBodekFit['nu'],(ChristyBodekFit["rtqe"]+ChristyBodekFit["rtie"]+ChristyBodekFit["rte"]+ChristyBodekFit["rtns"]+
-                rt_quasi_deuteron(nus=ChristyBodekFit['nu'],q2s=ChristyBodekFit['q2'],exs=ChristyBodekFit['ex']))*1e3, color='black', linestyle='-',lw=0.8, zorder=0)
-        ax_rl.plot(ChristyBodekFit['nu'],ChristyBodekFit["rlqe"]*1e3,color='black',label="$R_L$(QE), $R_T$(QE+TE) Christy-Bodek-2024", linestyle='dotted',lw=0.8, zorder=0) 
-        ax_rt.plot(ChristyBodekFit['nu'],(ChristyBodekFit["rtqe"]+ChristyBodekFit["rte"])*1e3,color='black', linestyle='dotted',lw=0.8, zorder=0)
+        ax_rl.plot(ChristyBodekFit['nu'],ChristyBodekFit["rltot"],color='black',label="$R_L$(total), $R_T$(total) Christy-Bodek-2024", linestyle='solid',lw=0.8, zorder=0)
+        ax_rt.plot(ChristyBodekFit['nu'],ChristyBodekFit["rttot"], color='black', linestyle='solid',lw=0.8, zorder=0)
+        ax_rl.plot(ChristyBodekFit['nu'],ChristyBodekFit["rlqe"], color='black',label="$R_L$(QE), $R_T$(QE+TE) Christy-Bodek-2024", linestyle='dotted',lw=0.8, zorder=0)
+        ax_rt.plot(ChristyBodekFit['nu'],ChristyBodekFit["rtqe"] + ChristyBodekFit["rte"], color='black', linestyle='dotted',lw=0.8, zorder=0)
 
         # plot mc as lines
         for mc in mc_plot_list:
@@ -183,10 +181,10 @@ def plot_response_qvbin(df_this_analysis : pd.DataFrame, qvcenters : list[float]
             # avoid overlapping with Yamaguchi
             nu_yam = sheet_exp_rl.loc[(sheet_exp_rl['qv']==qvcenter) & (sheet_exp_rl['experiment']=='Yamaguchi')]['nu'].max()
             df_qvbin = df_qvbin.loc[df_qvbin['nu'] >= nu_yam]
-        ax_rl.errorbar(df_qvbin['nu'], df_qvbin['RL']*1e3, yerr = df_qvbin['RLerr']*1e3, ecolor='red', markersize=0, capsize=0, lw=1, fmt='D', elinewidth=1, alpha=0.5, zorder=2) 
-        ax_rl.scatter(df_qvbin['nu'], df_qvbin['RL']*1e3, color='red', label = '$R_L$, $R_T$ this analysis', marker='D', s=15, edgecolors='gray', linewidth=0.5, zorder=2)
-        ax_rt.errorbar(df_qvbin['nu'], df_qvbin['RT']*1e3, yerr = df_qvbin['RTerr']*1e3, ecolor='red', markersize=0, capsize=0, lw=1, fmt='D', elinewidth=1, alpha=0.5, zorder=2)
-        ax_rt.scatter(df_qvbin['nu'], df_qvbin['RT']*1e3, color='red', marker='D', s=15, edgecolors='gray', linewidth=0.5, zorder=2)
+        ax_rl.errorbar(df_qvbin['nu'], df_qvbin['RL'], yerr = df_qvbin['RLerr'], ecolor='red', markersize=0, capsize=0, lw=1, fmt='D', elinewidth=1, alpha=0.5, zorder=2) 
+        ax_rl.scatter(df_qvbin['nu'], df_qvbin['RL'], color='red', label = '$R_L$, $R_T$ this analysis', marker='D', s=15, edgecolors='gray', linewidth=0.5, zorder=2)
+        ax_rt.errorbar(df_qvbin['nu'], df_qvbin['RT'], yerr = df_qvbin['RTerr'], ecolor='red', markersize=0, capsize=0, lw=1, fmt='D', elinewidth=1, alpha=0.5, zorder=2)
+        ax_rt.scatter(df_qvbin['nu'], df_qvbin['RT'], color='red', marker='D', s=15, edgecolors='gray', linewidth=0.5, zorder=2)
 
     # loop over given qv centers
     for i, qvcenter in enumerate(qvcenters):
