@@ -84,7 +84,6 @@ RLRT_QVPLOT_HEIGHTS = {
 }
 
 RLRT_QVINSET_HEIGHTS = {
-    0.991:[5.0, 20.0],
     1.619:[0.6, 2.5],
     1.921:[0.3, 1.3],
     2.213:[0.15, 0.8],
@@ -94,7 +93,6 @@ RLRT_QVINSET_HEIGHTS = {
 }
 
 RLRT_QVINSET_XLIMS = {
-    0.991:[0.40, 0.73],
     1.619:[0.86, 1.23],
     1.921:[1.10, 1.50],
     2.213:[1.34, 1.78],
@@ -105,7 +103,7 @@ RLRT_QVINSET_XLIMS = {
 
 
 def plot_response_qvbin(df_this_analysis : pd.DataFrame, qvcenters : list[float] = [0.3, 0.38, 0.57], figsize_per_row : tuple[float, float] = (11, 2),
-        sharex : bool = False, figshow : bool = False, christy_bodek_fit : bool = True, theory_plot_list : list[str] = THEORY_QVPLOT_LIST,
+        sharex : bool = False, figshow : bool = False, theory_plot_list : list[str] = THEORY_QVPLOT_LIST,
         exp_plot_list : list[str] = EXP_QVPLOT_LIST, mc_plot_list : list[str] = MC_QVPLOT_LIST) -> Figure:
     # TODO: add comments
 
@@ -174,10 +172,10 @@ def plot_response_qvbin(df_this_analysis : pd.DataFrame, qvcenters : list[float]
             df_rt = sheet_exp_rt.loc[(sheet_exp_rt['qv']==qvcenter) & (sheet_exp_rt['experiment']==exp)]
             if len(df_rl) > 0:
                 ax_rl.errorbar(df_rl['nu'], df_rl['rl'], yerr=df_rl['rlerr'], **ERRORBAR_STYLES[exp])
-                ax_rl.scatter(df_rl['nu'], df_rl['rl'], **SCATTER_STYLES[exp], label=f'$R_L$, $R_T$ {exp}')
+                ax_rl.scatter(df_rl['nu'], df_rl['rl'], **SCATTER_STYLES[exp])
             if len(df_rt) > 0:
                 ax_rt.errorbar(df_rt['nu'], df_rt['rt'], yerr=df_rt['rterr'], **ERRORBAR_STYLES[exp])
-                ax_rt.scatter(df_rt['nu'], df_rt['rt'], **SCATTER_STYLES[exp])
+                ax_rt.scatter(df_rt['nu'], df_rt['rt'], **SCATTER_STYLES[exp], label=f'$R_L$, $R_T$ {exp}')
 
         # plot this analysis
         df_qvbin = df_this_analysis.loc[df_this_analysis['qvcenter'] == qvcenter]
@@ -223,7 +221,7 @@ def plot_response_qvbin(df_this_analysis : pd.DataFrame, qvcenters : list[float]
         axs[i, 1].set_ylim(0, RLRT_QVPLOT_HEIGHTS[qvcenter][1])
 
          # put inset plot at top left corner
-        if qvcenter > 0.991:
+        if qvcenter >= 1.619:
             ax_inset0 = inset_axes(axs[i, 0], width="45%", height="50%", loc='upper left')
             ax_inset1 = inset_axes(axs[i, 1], width="45%", height="50%", loc='upper left')
 
@@ -251,7 +249,7 @@ def plot_response_qvbin(df_this_analysis : pd.DataFrame, qvcenters : list[float]
     handles = list(unique.values())
     labels = list(unique.keys())
     fig.legend(handles, labels, loc="lower center", ncol=4, bbox_to_anchor=(0.5, -0.1), frameon=False)
-    fig.tight_layout()
+    # fig.tight_layout()
     if figshow:
         plt.show()
     plt.close()
