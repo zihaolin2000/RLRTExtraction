@@ -2,6 +2,7 @@
 import numpy as np
 from numpy.typing import ArrayLike
 import numpy as np
+from scipy.special import expit
 from .presets import *
 
 # ____________________utility functions____________________
@@ -45,24 +46,26 @@ def quasi_deuteron(ex : float, n : int = 6, a : int = 12, z : int = 6) -> float:
         sigma = 397.8 * (n * z / a) * ((ex - 2.224)**(3/2)) * (ex**-3) * pauli_blocking(ex) # in mb
         return sigma * 0.1 * 0.1975**-2 # in GeV^-2
 
-
 def dipole_form(q2s : ArrayLike) -> ArrayLike: # Q2 in GeV^2; return dipole form unitless
-    return 1 / ((1 + np.array(q2s) / 0.5)**5) # new value 2025 July 18
+    # return 1 / ((1 + np.array(q2s) / 0.5)**5) # new value 2025 July 18
+    return 1 / ((1 + np.asarray(q2s) / 0.5)**5) # new value 2025 July 18
 
+def fd_distribution(xs : ArrayLike, center : float = 0.12, width : float = 0.005) -> ArrayLike: # nu in GeV
+    z = (np.asarray(xs) - center) / width
+    return expit(-z)
 
-def quasi_deuteron_suppression(nus : ArrayLike, center : float = 0.12, width : float = 0.005) -> ArrayLike: # nu in GeV
-    return 1 / (np.exp((np.array(nus) - center) / width) + 1)
-
+    # return np.where(xs <= center + 2 * width, 1 / (np.exp((np.array(xs) - center) / width) + 1), 0)
 
 def rt_quasi_deuteron(nus : ArrayLike, q2s : ArrayLike, exs : ArrayLike) -> ArrayLike: # RT in MeV^-1, ex in GeV
     QDs=[]
     for ex in exs:
         QDs.append(quasi_deuteron(ex))
-    QDs = np.array(QDs)
+    QDs = np.asarray(QDs)
     GEs = dipole_form(q2s)
-    GEs = np.array(GEs)
-    RTQD = GEs**2 * QDs * np.array(nus) / (2 * (np.pi**2) * ALPHA_FINE)
-    RTQD = RTQD * 1.5 * quasi_deuteron_suppression(nus) # added 2025 Sep 23
+    GEs = np.asarray(GEs)
+    # RTQD = GEs**2 * QDs * np.array(nus) / (2 * (np.pi**2) * ALPHA_FINE)
+    RTQD = GEs**2 * QDs * np.asarray(nus) / (2 * (np.pi**2) * ALPHA_FINE)
+    RTQD = RTQD * 1.5 * fd_distribution(nus) # added 2025 Sep 23
     return RTQD*1e-3 # in MeV-1
 
 def ratio_interpolated(x1, y1, x2, y2, eps=0.0, shrink=0.98):
