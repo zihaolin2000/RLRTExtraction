@@ -3,7 +3,7 @@ import pandas as pd
 from scipy.optimize import curve_fit
 from scipy.interpolate import interp1d
 from .presets import *
-from .utilities import rt_quasi_deuteron, linear_model, quasi_deuteron_suppression
+from .utilities import rt_quasi_deuteron, linear_model, special_sigmoid
 from .christy_bodek_fit import calculate_response_table
 
 
@@ -174,14 +174,16 @@ def prepare_dataframe(df_data : pd.DataFrame, vcoul : float = 0.0031, syst_err :
 
 def calculate_response_table_update_qd_ie(df_qv_nu : pd.DataFrame):
     df = calculate_response_table(table = df_qv_nu)
-    # shift the inelastic peak at low q2
-    q2_suppression = quasi_deuteron_suppression(df['q2'], center = 0.03, width= 0.005) # apply shifts at low q2 only
-    f_rtie = interp1d(df['nu'], df['rtie'], kind="linear", bounds_error=False, fill_value=0.0)
-    rtie_shifts = 1.06*f_rtie(df['nu'] - 0.018) - df['rtie']
-    df['rtie'] = df['rtie'] + rtie_shifts * q2_suppression
-    f_rlie = interp1d(df['nu'], df['rlie'], kind="linear", bounds_error=False, fill_value=0.0)
-    rlie_shifts = 1.06*f_rlie(df['nu'] - 0.018) - df['rlie']
-    df['rlie'] = df['rlie'] + rlie_shifts * q2_suppression
+    # FIXME: the shift is wrong. Don't do the entire dataframe.
+    # # shift the inelastic peak at low q2
+    # q2_suppression = special_sigmoid(df['q2'], center = 0.03, width= 0.005) # apply shifts at low q2 only
+    # f_rtie = interp1d(df['nu'], df['rtie'], kind="linear", bounds_error=False, fill_value=0.0)
+    # rtie_shifts = 1.06*f_rtie(df['nu'] - 0.018) - df['rtie']
+    # df['rtie'] = df['rtie'] + rtie_shifts * q2_suppression
+    # f_rlie = interp1d(df['nu'], df['rlie'], kind="linear", bounds_error=False, fill_value=0.0)
+    # rlie_shifts = 1.06*f_rlie(df['nu'] - 0.018) - df['rlie']
+    # df['rlie'] = df['rlie'] + rlie_shifts * q2_suppression
+
     # quasi-deuteron contribution
     df['rtqd'] = rt_quasi_deuteron(nus = df['nu'], q2s = df['q2'], exs = df['ex'])
     df['rttot'] = df['rtqe'] + df['rte'] + df['rtie'] + df['rtns'] + df['rtqd']
@@ -354,10 +356,11 @@ def extract_response_q2bin_w2center(df : pd.DataFrame, q2center : float = 0.01, 
             a_opt, b_opt = params
             a_err, b_err = np.sqrt(np.diag(covariance))
             chi2 = np.sum(np.square((y - linear_model(x, a_opt, b_opt)) / yerr))
-            rl = a_opt / 1000
-            rlerr = a_err / 1000 
-            rt = (2 * b_opt * q2center / qvc2) / 1000
-            rterr = (2 * b_err * q2center / qvc2) / 1000
+            # rl, rlerr, rt, rterr in GeV^-1:
+            rl = a_opt
+            rlerr = a_err
+            rt = (2 * b_opt * q2center / qvc2)
+            rterr = (2 * b_err * q2center / qvc2)
             df_rlrt.append({'q2center':q2center, 'nu':nuc, 'w2':w2center, 'ex':exc, 'rl':rl, 'rlerr':rlerr, 'rt':rt,
                 'rterr':rterr, 'chi2':chi2, 'num_points':len(y)})
 
@@ -394,10 +397,11 @@ def extract_response_q2bin_excenter(df : pd.DataFrame, q2center : float = 0.01, 
             a_opt, b_opt = params
             a_err, b_err = np.sqrt(np.diag(covariance))
             chi2 = np.sum(np.square((y-linear_model(x,a_opt,b_opt))/yerr))
-            rl = a_opt/1000
-            rlerr = a_err/1000 
-            rt = (2*b_opt*q2center/qvc2)/1000
-            rterr = (2*b_err*q2center/qvc2)/1000
+            # rl, rlerr, rt, rterr in GeV^-1:
+            rl = a_opt
+            rlerr = a_err
+            rt = (2*b_opt*q2center/qvc2)
+            rterr = (2*b_err*q2center/qvc2)
             df_rlrt.append({'Q2center':q2center,'nu':nuc,'W2':w2c,'Ex':excenter,'RL':rl,'RLerr':rlerr,'RT':rt,'RTerr':rterr,'Chi2':chi2,
                     'num_points':len(y)})
     
@@ -433,10 +437,11 @@ def extract_response_qvbin_w2center(df : pd.DataFrame, qvcenter : float = 0.01, 
             a_opt, b_opt = params
             a_err, b_err = np.sqrt(np.diag(covariance))            
             chi2 = np.sum(np.square((y - linear_model(x,a_opt,b_opt)) / yerr))
-            rl = a_opt / 1000
-            rlerr = a_err / 1000 
-            rt = (2 * b_opt * q2center / qvc2) / 1000
-            rterr = (2 * b_err * q2center / qvc2) / 1000
+            # rl, rlerr, rt, rterr in GeV^-1:
+            rl = a_opt
+            rlerr = a_err
+            rt = (2 * b_opt * q2center / qvc2)
+            rterr = (2 * b_err * q2center / qvc2)
             df_rlrt.append({'qvcenter':qvcenter,'nu':nuc,'W2':w2center,'Ex':exc,'RL':rl,'RLerr':rlerr,'RT':rt,'RTerr':rterr,'Chi2':chi2,
                     'num_points':len(y)})             
 
@@ -472,10 +477,11 @@ def extract_response_qvbin_excenter(df : pd.DataFrame, qvcenter : float = 0.01, 
             a_opt, b_opt = params
             a_err, b_err = np.sqrt(np.diag(covariance))
             chi2 = np.sum(np.square((y-linear_model(x,a_opt,b_opt))/yerr))
-            rl = a_opt/1000
-            rlerr = a_err/1000 
-            rt = (2*b_opt*q2center/qvc2)/1000
-            rterr = (2*b_err*q2center/qvc2)/1000
+            # rl, rlerr, rt, rterr in GeV^-1:
+            rl = a_opt
+            rlerr = a_err
+            rt = (2*b_opt*q2center/qvc2)
+            rterr = (2*b_err*q2center/qvc2)
             df_rlrt.append({'qvcenter':qvcenter,'nu':nuc,'W2':w2c,'Ex':excenter,'RL':rl,'RLerr':rlerr,'RT':rt,'RTerr':rterr,'Chi2':chi2,
                     'num_points':len(y)})
 
