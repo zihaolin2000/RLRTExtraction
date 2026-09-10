@@ -69,7 +69,7 @@ def _plot_rosenbluth_xsec_epsilon_combined(df, qvcenter, df_rlrt):
     plt.xlabel('epsilon')
     plt.xlabel('rosenbluth xsec')
 
-def prepare_dataframe(df_data : pd.DataFrame, vcoul : float = 0.0031, syst_err : bool = True, mass_nucleus : float = MASS_C12) -> pd.DataFrame:
+def prepare_dataframe(df_data : pd.DataFrame, vcoul : float = 0.0031, syst_err : bool = False, mass_nucleus : float = MASS_C12) -> pd.DataFrame:
     """
     Prepare a table (pd.DataFrame) for Rosenbluth RL RT seperation.
 
@@ -119,6 +119,9 @@ def prepare_dataframe(df_data : pd.DataFrame, vcoul : float = 0.0031, syst_err :
     # Barreau systematics error stemming from the calorimeter that varies with E':
     df["Ep"]=df["E0"]-df["nu"]
     barreau_sys2 = 0.025/(1.0 + (df.loc[df['dataSet']==1]['Ep'])/0.1)
+    # barreau_sys2 = np.zeros_like(df.loc[df['dataSet']==1]['Ep'])
+    # FIXME: as of Sept 10 2026: we will stay with the old fit. We won't apply systematics error for now.
+
     df.loc[df['dataSet']==1, 'error_with_syst'] = np.sqrt(
         df.loc[df['dataSet']==1, 'error_with_syst']**2
         +barreau_sys2 * (df.loc[df['dataSet']==1,'cross']**2)
