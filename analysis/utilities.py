@@ -153,5 +153,7 @@ def evaluate_norm_error(xs : ArrayLike, xs_err : ArrayLike, model : ArrayLike):
     ratio_weight = 1/ratio_err**2
     norm = np.sum(ratio * ratio_weight)/np.sum(ratio_weight)
     norm_err = np.sqrt(1/np.sum(ratio_weight))
+    print(ratio)
+    print('avg:',np.average(ratio, weights=ratio_weight))
     return norm, norm_err
 
