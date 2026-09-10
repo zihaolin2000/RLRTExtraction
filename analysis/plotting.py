@@ -533,10 +533,15 @@ def plot_cross_section(df : pd.DataFrame, pdf_path : str):
                     ax.plot(df_CB['nu'], df_CB['xs_mec']*12*1000, label='mec 2025', alpha=0.7, linestyle='-')
                     # ax.plot(df_CB['nu'], df_CB['xs_narrow_states']*12*1000, alpha=0.7, linestyle=':')
 
-                    ax.set_title(f'dataset={ds}:{DATASETS[ds]}, $E_0$={round(e0,5)}, $\\theta$={theta},\nnorm={NORMALIZATIONS[ds]}, norm_error={NORMALIZATION_ERRORS[ds]}, syst_error={SYSTEMATIC_ERRORS[ds]}')
+                    ax.set_title(f'dataset={ds}:{DATASETS[ds]}, $E_0$={round(e0,5)}, $\\theta$={theta},\nnorm={round(NORMALIZATIONS[ds],4)}, norm_error={round(NORMALIZATION_ERRORS[ds],4)}, syst_error={round(SYSTEMATIC_ERRORS[ds],4)}')
                     ax.tick_params(which='both', direction='in')
                     ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
-                    # ax.set_xlim(0, None)
+
+                    # plot Ex=40MeV
+                    ex_plot = 0.04 
+                    nu_plot = ex_plot + (e0-e0/(1+2*e0*(np.sin(0.5 * np.pi * theta/180)**2) / MASS_C12))
+                    ax.axvline(nu_plot,linestyle=':',label='Ex = 40 MeV')
+                    ax.set_xlim(df_CB['nu'].min(), df_CB['nu'].max())
                     ax.set_ylim(0, None)
                     if i == 0:
                         ax.legend(frameon=False)
