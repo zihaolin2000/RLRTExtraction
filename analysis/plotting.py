@@ -317,7 +317,7 @@ def plot_response_q2bin(df_this_analysis : pd.DataFrame, q2centers : list[float]
     repo_path = Path(__file__).resolve().parent.parent
     plot_xlsx = repo_path/'Carbon/one_sheet_to_rule_them_all.xlsx'
     if sheet_CBfit is None:
-        sheet_CBfit = pd.read_excel(plot_xlsx, sheet_name='CBfit_qvbin')
+        sheet_CBfit = pd.read_excel(plot_xlsx, sheet_name='CBfit_q2bin')
     sheet_mc_rl = pd.read_excel(plot_xlsx, sheet_name='mc_rl_q2bin')
     sheet_mc_rt = pd.read_excel(plot_xlsx, sheet_name='mc_rt_q2bin')
     sheet_exp_rl = pd.read_excel(plot_xlsx, sheet_name='exp_rl_q2bin')
@@ -445,7 +445,10 @@ def plot_response_q2bin(df_this_analysis : pd.DataFrame, q2centers : list[float]
         axs[i, 0].tick_params(which='both', direction='in', top=True, right=True)
         axs[i, 0].minorticks_on()
         axs[i, 0].set_ylabel(r'$R_L$ (GeV$^{-1}$)')
-        axs[i, 0].set_ylim(0, RLRT_Q2PLOT_HEIGHTS[q2center][0])
+        if q2center == 0.093:
+            axs[i, 0].set_ylim(-10, RLRT_Q2PLOT_HEIGHTS[q2center][0])
+        else:
+            axs[i, 0].set_ylim(0, RLRT_Q2PLOT_HEIGHTS[q2center][0])
         axs[i, 1].text(0.95, 0.95,'$R_T$ ($Q^2$ = '+f'{q2center} GeV$^2$/c$^2$)',transform=axs[i, 1].transAxes,ha='right',va='top',color='gray')
         axs[i, 1].tick_params(which='both', direction='in', top=True, right=True)
         axs[i, 1].minorticks_on()
