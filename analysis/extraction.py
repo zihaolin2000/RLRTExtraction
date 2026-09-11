@@ -82,7 +82,7 @@ def prepare_dataframe(df_data : pd.DataFrame, vcoul : float = 0.0031, syst_err :
         Value for nucleus coulomb correction. Default: 0.0031 (carbon)
     syst_err : bool, optional
         If True, add systematic error to add to cross section error.
-        Default: True
+        Default: False
     mass_nucleus : float, optional
         Mass of nucleus in GeV.
         Default: mass of Carbon nucleus, 11.178.
@@ -118,14 +118,13 @@ def prepare_dataframe(df_data : pd.DataFrame, vcoul : float = 0.0031, syst_err :
     )
     # Barreau systematics error stemming from the calorimeter that varies with E':
     df["Ep"]=df["E0"]-df["nu"]
-    barreau_sys2 = 0.025/(1.0 + (df.loc[df['dataSet']==1]['Ep'])/0.1)
+    # barreau_sys2 = 0.025/(1.0 + (df.loc[df['dataSet']==1]['Ep'])/0.1)
     # barreau_sys2 = np.zeros_like(df.loc[df['dataSet']==1]['Ep'])
     # FIXME: as of Sept 10 2026: we will stay with the old fit. We won't apply systematics error for now.
-
-    df.loc[df['dataSet']==1, 'error_with_syst'] = np.sqrt(
-        df.loc[df['dataSet']==1, 'error_with_syst']**2
-        +barreau_sys2 * (df.loc[df['dataSet']==1,'cross']**2)
-    )
+    # df.loc[df['dataSet']==1, 'error_with_syst'] = np.sqrt(
+    #     df.loc[df['dataSet']==1, 'error_with_syst']**2
+    #     +barreau_sys2 * (df.loc[df['dataSet']==1,'cross']**2)
+    # )
     if syst_err == False:
         df['error_with_syst'] = df['error']
 
