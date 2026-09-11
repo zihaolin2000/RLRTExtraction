@@ -9,7 +9,6 @@ from pathlib import Path
 from .utilities import rt_quasi_deuteron
 from .presets import *
 from .christy_bodek_fit import calculate_cross_section_table
-from .christy_bodek_fit_C12_2025archive import calculate_cross_section_table as calculate_cross_section_table_2025
 
 from matplotlib.backends.backend_pdf import PdfPages
 
@@ -525,13 +524,6 @@ def plot_cross_section(df : pd.DataFrame, pdf_path : str):
                     ax.plot(df_CB['nu'], df_CB['xs_inelastic']*12*1000, label='inel 2026', alpha=0.7, linestyle='-')
                     ax.plot(df_CB['nu'], df_CB['xs_mec']*12*1000, label='mec 2026', alpha=0.7, linestyle='-')
                     # ax.plot(df_CB['nu'], df_CB['xs_narrow_states']*12*1000, alpha=0.7, linestyle='-')
-
-                    df_CB = calculate_cross_section_table_2025(inputs)
-                    ax.plot(df_CB['nu'], df_CB['xs_total']*12*1000, label='CBfit total 2025', alpha=0.9, linestyle=':')
-                    ax.plot(df_CB['nu'], df_CB['xs_qe']*12*1000, label='QE 2025', alpha=0.9, linestyle='-.')
-                    ax.plot(df_CB['nu'], df_CB['xs_inelastic']*12*1000, label='inel 2025', alpha=0.9, linestyle='--')
-                    ax.plot(df_CB['nu'], df_CB['xs_mec']*12*1000, label='mec 2025', alpha=0.7, linestyle='-')
-                    # ax.plot(df_CB['nu'], df_CB['xs_narrow_states']*12*1000, alpha=0.7, linestyle=':')
 
                     ax.set_title(f'dataset={ds}:{DATASETS[ds]}, $E_0$={round(e0,5)}, $\\theta$={theta},\nnorm={round(NORMALIZATIONS[ds],4)}, norm_error={round(NORMALIZATION_ERRORS[ds],4)}, syst_error={round(SYSTEMATIC_ERRORS[ds],4)}')
                     ax.tick_params(which='both', direction='in')
