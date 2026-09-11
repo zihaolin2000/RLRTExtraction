@@ -59,7 +59,7 @@ c     &          exp(-24.2/140.0)
 c      sigqd = sigqd/(1.0+q2/xvalm(26))**xvalm(27)
       sigqd = sigqd/(1.0+Q2/0.1)**5.0
 
-      sigqd = 0.0
+c      sigqd = 0.0
       
       f1qd = sigqd/8.0/pi2/alpha/3.894e3*abs(w2-mp2)
 
