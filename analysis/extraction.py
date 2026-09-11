@@ -9,7 +9,7 @@ from .christy_bodek_fit import calculate_response_table
 
 # For development: make individual rosenbluth seperation plot
 _plot_rosenbluth = False
-_plot_rosenbluth_combined = True
+_plot_rosenbluth_combined = False
 
 def _plot_rosenbluth_xsec_epsilon(df, qvcenter, a_opt, b_opt, chi2_ndf, nuc, w2center):
     plt.figure(figsize=(15,10))
