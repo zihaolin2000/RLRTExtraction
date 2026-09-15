@@ -5,7 +5,7 @@ from scipy.optimize import curve_fit
 from scipy.interpolate import interp1d
 from .presets import *
 from .utilities import rt_quasi_deuteron, linear_model, special_sigmoid
-from .christy_bodek_fit import calculate_response_table
+from .christy_bodek_fit import calculate_response_table, calculate_response_inelastic
 
 # For development: make individual rosenbluth seperation plot
 _plot_rosenbluth = False
@@ -260,18 +260,34 @@ def prepare_dataframe(df_data : pd.DataFrame, vcoul : float = 0.0031, syst_err :
     return df
 
 def calculate_response_table_update_qd_ie(df_qv_nu : pd.DataFrame, a : float = 12.0, z : float = 6.0):
-    # FIXME: this function is outdated. Use rtqd calculated in Fortran. - Ziggy Aug 10 2026
-    # Now it's reverted. We will keep using CB fit ver2025. - Ziggy Sept 11 2026 
+    # We will keep using CB fit ver2025. - Ziggy Sept 11 2026 
     df = calculate_response_table(table = df_qv_nu, a=a, z=z)
-    # FIXME: the shift is wrong. Don't do the entire dataframe.
-    # # shift the inelastic peak at low q2
-    # q2_suppression = special_sigmoid(df['q2'], center = 0.03, width= 0.005) # apply shifts at low q2 only
-    # f_rtie = interp1d(df['nu'], df['rtie'], kind="linear", bounds_error=False, fill_value=0.0)
-    # rtie_shifts = 1.06*f_rtie(df['nu'] - 0.018) - df['rtie']
-    # df['rtie'] = df['rtie'] + rtie_shifts * q2_suppression
-    # f_rlie = interp1d(df['nu'], df['rlie'], kind="linear", bounds_error=False, fill_value=0.0)
-    # rlie_shifts = 1.06*f_rlie(df['nu'] - 0.018) - df['rlie']
-    # df['rlie'] = df['rlie'] + rlie_shifts * q2_suppression
+
+    # 9/14/2026: Correctly shift delta peak to the right by 18 MeV and up by 6%; suppress at high q2
+    rties = []
+    rlies = []
+    # for index, row in df.iterrows():
+    nus = df['nu'].values
+    q2s = df['q2'].values
+
+    for i in range(len(nus)):
+        # shift peak to the right by 0.018 GeV
+        # new_nu = nus[i] - 0.018
+        new_nu = nus[i] - 0.02699396
+        if new_nu <= 0.0: 
+            new_nu = 0.0001
+        new_qv = np.sqrt(q2s[i] + new_nu**2)
+        rtie, rlie = calculate_response_inelastic(new_qv, new_nu)
+        # shift up by 6%
+        # rties.append(rtie*1.06)
+        # rlies.append(rlie*1.06)
+        rties.append(rtie)
+        rlies.append(rlie)
+    rties = np.array(rties)
+    rlies = np.array(rlies)
+    q2_suppression = special_sigmoid(df['q2'], center = 0.03, width= 0.005) # apply shifts at low q2 only
+    df['rtie'] = df['rtie'] + (rties - np.array(df['rtie'])) * q2_suppression
+    df['rlie'] = df['rlie'] + (rlies - np.array(df['rlie'])) * q2_suppression
 
     # quasi-deuteron contribution
     df['rtqd'] = rt_quasi_deuteron(nus = df['nu'], q2s = df['q2'], exs = df['ex'])
