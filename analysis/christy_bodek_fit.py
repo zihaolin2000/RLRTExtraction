@@ -336,6 +336,13 @@ def _resmod_common(sf: int, w2: float, q2: float, xval: Sequence[float], *, prot
             else:
                 sigr = width[i] * pgam[i] / denom
                 sigr = height[i] * kr[i] / k * kcmr[i] / kcm * sigr / intwidth[i]
+            # 9/14/2026: customize a delta shift.
+            # first peak: + 6%; second and further peaks: -10%.
+            if sf == 1:
+                if i == 1:
+                    sigr *= 1.19306324
+                elif i in (2, 3, 6):
+                    sigr *= 0.69402966
             sig_res += sigr
     sig_res *= w
     if sf == 2:
@@ -1142,6 +1149,46 @@ def calculate_response_point(qv: float, nu: float, *, a: float = 12.0, z: float 
         "rlns": rlns
     }
 
+
+def calculate_response_inelastic(qv: float, nu: float, *, a: float = 12.0, z: float = 6.0, xvalc: Sequence[float] = XVALC) -> tuple[float, float]:
+    """Calculate RL/RT response pieces for inelastic contribution.
+
+    Parameters
+    ----------
+    qv : float
+        Three-momentum transfer |q| in GeV.
+    nu : float
+        Energy transfer in GeV.
+    a : float
+        Nuclear mass number A.
+    z : float
+        Nuclear charge Z.
+    xvalc : sequence of float
+        Fit parameter table used by the original Fortran code.
+
+    Returns
+    -------
+    tuple[float, float]
+        Tuple of rtie, rlie. Returns None when q2 <= 0 or
+        nu == 0, matching the original Fortran behavior.
+    """
+    q2 = qv * qv - nu * nu
+    # if q2 <= 0.0 or nu == 0.0:
+    if q2 < 0.0 or nu < 0.0:
+        return None
+
+    nuel = q2 / (2.0 * (0.931494 * a))
+    ex = nu - nuel
+    w2 = MP_MAIN * MP_MAIN + 2.0 * MP_MAIN * nu - q2
+    xb = q2 / (2.0 * MP_MAIN * nu)
+
+    # inelastic peak
+    f1, fl = csfitcomp(w2, q2, a, z, xvalc, 3)
+    fl = 2.0 * xb * fl
+    rtie = 2.0 / MP_MAIN * f1 / 1000.0
+    rlie = qv * qv / q2 / 2.0 / MP_MAIN / xb * fl / 1000.0
+
+    return rtie, rlie
 
 
 def calculate_response_table(table: pd.DataFrame | np.ndarray | Iterable[tuple[float, float]], *, a: float = 12.0, z: float = 6.0, xvalc: Sequence[float] = XVALC) -> pd.DataFrame:
