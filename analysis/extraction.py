@@ -2,10 +2,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
-from scipy.interpolate import interp1d
 from .presets import *
-from .utilities import rt_quasi_deuteron, linear_model, special_sigmoid
-from .christy_bodek_fit import calculate_response_table, calculate_response_inelastic
+from .utilities import linear_model
+from .christy_bodek_fit import calculate_response_table
 
 # For development: make individual rosenbluth seperation plot
 _plot_rosenbluth = False
@@ -162,7 +161,7 @@ def prepare_dataframe(df_data : pd.DataFrame, vcoul : float = 0.0031, syst_err :
     df["Hcc_error(GeV)"]=df["Hcc_error(nb)"]/((0.1973269**2)*10000000)
 
     # # RT quasi deuteron added 2025 July 18
-    df["RT_QD_data"] = rt_quasi_deuteron(nus=df['nu'],q2s = df['Q2'],exs = df['Ex'])
+    # df["RT_QD_data"] = rt_quasi_deuteron(nus=df['nu'],q2s = df['Q2'],exs = df['Ex'])
 
     # split into qv, q2 bins:
     df['qvbin'] = 0.0
@@ -259,44 +258,6 @@ def prepare_dataframe(df_data : pd.DataFrame, vcoul : float = 0.0031, syst_err :
     # df=df.dropna()
     return df
 
-def calculate_response_table_update_qd_ie(df_qv_nu : pd.DataFrame, a : float = 12.0, z : float = 6.0):
-    # We will keep using CB fit ver2025. - Ziggy Sept 11 2026 
-    df = calculate_response_table(table = df_qv_nu, a=a, z=z)
-
-    # 9/14/2026: Correctly shift delta peak to the right by 18 MeV and up by 6%; suppress at high q2
-    rties = []
-    rlies = []
-    # for index, row in df.iterrows():
-    nus = df['nu'].values
-    q2s = df['q2'].values
-
-    for i in range(len(nus)):
-        # shift peak to the right by 0.018 GeV
-        # new_nu = nus[i] - 0.018
-        new_nu = nus[i] - 0.02699396
-        if new_nu <= 0.0: 
-            new_nu = 0.0001
-        new_qv = np.sqrt(q2s[i] + new_nu**2)
-        rtie, rlie = calculate_response_inelastic(new_qv, new_nu)
-        # shift up by 6%
-        # rties.append(rtie*1.06)
-        # rlies.append(rlie*1.06)
-        rties.append(rtie)
-        rlies.append(rlie)
-    rties = np.array(rties)
-    rlies = np.array(rlies)
-    q2_suppression = special_sigmoid(df['q2'], center = 0.03, width= 0.005) # apply shifts at low q2 only
-    df['rtie'] = df['rtie'] + (rties - np.array(df['rtie'])) * q2_suppression
-    df['rlie'] = df['rlie'] + (rlies - np.array(df['rlie'])) * q2_suppression
-
-    # quasi-deuteron contribution
-    df['rtqd'] = rt_quasi_deuteron(nus = df['nu'], q2s = df['q2'], exs = df['ex'])
-    df['rttot'] = df['rtqe'] + df['rte'] + df['rtie'] + df['rtns'] + df['rtqd']
-    df['rltot'] = df['rlqe'] + df['rle'] + df['rlie'] + df['rlns']
-    for col in ["rttot", "rltot", "rtqe", "rlqe", "rtie", "rlie", "rte", "rle", "rtns", "rlns"]:
-        df[col] = df[col] * 1e3 # convert from MeV^-1 to GeV^-1
-    return df
-
 def calculate_bin_centering_correction(df_xsec : pd.DataFrame, mass_nucleus : float = MASS_C12, a: float = 12.0, z: float = 6.0) -> pd.DataFrame:
     """
     Calculate bin-centering correction factors for Rosenbluth reduced cross
@@ -334,8 +295,8 @@ def calculate_bin_centering_correction(df_xsec : pd.DataFrame, mass_nucleus : fl
     df_response = calculate_response_table(df_response, a = a, z = z)
     df['RL_q2c_w2'] = df_response['rltot'].values
     df['RT_q2c_w2'] = df_response['rttot'].values
-    df['RT_q2c_w2'] = df['RT_q2c_w2'] + rt_quasi_deuteron(nus=df['nucenter_w2_q2'],q2s = df['Q2center'],
-        exs = df['nucenter_w2_q2']-df['Q2center']/(2*mass_nucleus)) # RT quasi deuteron added 2025 July 18
+    # df['RT_q2c_w2'] = df['RT_q2c_w2'] + rt_quasi_deuteron(nus=df['nucenter_w2_q2'],q2s = df['Q2center'],
+    #     exs = df['nucenter_w2_q2']-df['Q2center']/(2*mass_nucleus)) # RT quasi deuteron added 2025 July 18
     # CBfit response values at data effective Q2 W2:
     nus = (df['W2'] + df['Q2'] - MASS_NUCLEON**2) / (2*MASS_NUCLEON)
     qvs = np.sqrt(df['Q2'] + nus**2)
@@ -343,7 +304,7 @@ def calculate_bin_centering_correction(df_xsec : pd.DataFrame, mass_nucleus : fl
     df_response = calculate_response_table(df_response, a = a, z = z)
     df['RL_q2d_w2'] = df_response['rltot'].values
     df['RT_q2d_w2'] = df_response['rttot'].values
-    df['RT_q2d_w2'] = df['RT_q2d_w2'] + df['RT_QD_data'] # RT quasi deuteron added 2025 July 18
+    # df['RT_q2d_w2'] = df['RT_q2d_w2'] + df['RT_QD_data'] # RT quasi deuteron added 2025 July 18
     df['bc_q2_w2']=1.0
     for Q2center in Q2CENTERS:
         mask = (df['Q2center'] == Q2center) & (df['Ex'] >= EX_CUT) # use Ex >= EX_CUT
@@ -362,14 +323,14 @@ def calculate_bin_centering_correction(df_xsec : pd.DataFrame, mass_nucleus : fl
     df_response = calculate_response_table(df_response, a = a, z = z)
     df['RL_q2c_ex'] = df_response['rltot'].values
     df['RT_q2c_ex'] = df_response['rttot'].values
-    df['RT_q2c_ex'] = df['RT_q2c_ex'] + rt_quasi_deuteron(nus=df['nucenter_ex_q2'],q2s = df['Q2center'],exs = df['Excenter_q2'])# RT quasi deuteron added 2025 July 18
+    # df['RT_q2c_ex'] = df['RT_q2c_ex'] + rt_quasi_deuteron(nus=df['nucenter_ex_q2'],q2s = df['Q2center'],exs = df['Excenter_q2'])# RT quasi deuteron added 2025 July 18
     # # CBfit response values at data effective Q2 Ex:
     nus = df['Ex'] + df['Q2']/(2*mass_nucleus)
     qvs = np.sqrt(df['Q2'] + nus**2)
     df_response = calculate_response_table(df_response, a = a, z = z)
     df['RL_q2d_ex'] = df_response['rltot'].values
     df['RT_q2d_ex'] = df_response['rttot'].values
-    df['RT_q2d_ex'] = df['RT_q2d_ex'] + + df['RT_QD_data'] # RT quasi deuteron added 2025 July 18
+    # df['RT_q2d_ex'] = df['RT_q2d_ex'] + + df['RT_QD_data'] # RT quasi deuteron added 2025 July 18
     df['bc_q2_ex']=1.0
     for Q2center in Q2CENTERS:
         mask = (df['Q2center'] == Q2center) & (df['Ex'] < EX_CUT) # use Ex < EX_CUT
@@ -389,8 +350,8 @@ def calculate_bin_centering_correction(df_xsec : pd.DataFrame, mass_nucleus : fl
     df_response = calculate_response_table(df_response, a = a, z = z)
     df['RL_qvc_w2'] = df_response['rltot'].values
     df['RT_qvc_w2'] = df_response['rttot'].values
-    df['RT_qvc_w2'] = df['RT_qvc_w2'] + rt_quasi_deuteron(nus=df['nucenter_w2_qv'],q2s = df['qvcenter']**2-df['nucenter_w2_qv']**2,
-                                exs = df['nucenter_w2_qv'] - (df['qvcenter']**2-df['nucenter_w2_qv']**2)/(2*mass_nucleus)) # RT quasi deuteron added 2025 July 18
+    # df['RT_qvc_w2'] = df['RT_qvc_w2'] + rt_quasi_deuteron(nus=df['nucenter_w2_qv'],q2s = df['qvcenter']**2-df['nucenter_w2_qv']**2,
+    #                             exs = df['nucenter_w2_qv'] - (df['qvcenter']**2-df['nucenter_w2_qv']**2)/(2*mass_nucleus)) # RT quasi deuteron added 2025 July 18
     # CBfit response values at data effective qv W2:
     nus = np.sqrt(df['qv']**2 + df['W2']) - MASS_NUCLEON
     qvs = df['qv']
@@ -398,7 +359,7 @@ def calculate_bin_centering_correction(df_xsec : pd.DataFrame, mass_nucleus : fl
     df_response = calculate_response_table(df_response, a = a, z = z)
     df['RL_qvd_w2'] = df_response['rltot'].values
     df['RT_qvd_w2'] = df_response['rttot'].values
-    df['RT_qvd_w2'] = df['RT_qvd_w2'] + df['RT_QD_data'] # RT quasi deuteron added 2025 July 18
+    # df['RT_qvd_w2'] = df['RT_qvd_w2'] + df['RT_QD_data'] # RT quasi deuteron added 2025 July 18
     df['bc_qv_w2']=1.0
     for qvcenter in QVCENTERS:
         ## Ex >= 50MeV:
@@ -417,8 +378,8 @@ def calculate_bin_centering_correction(df_xsec : pd.DataFrame, mass_nucleus : fl
     df_response = calculate_response_table(df_response, a = a, z = z)
     df['RL_qvc_ex'] = df_response['rltot'].values
     df['RT_qvc_ex'] = df_response['rttot'].values
-    df['RT_qvc_ex'] = df['RT_qvc_ex'] + rt_quasi_deuteron(nus=df['nucenter_ex_qv'],q2s = df['qvcenter']**2-df['nucenter_ex_qv']**2,
-        exs = df['Excenter_qv']) # RT quasi deuteron added 2025 July 18
+    # df['RT_qvc_ex'] = df['RT_qvc_ex'] + rt_quasi_deuteron(nus=df['nucenter_ex_qv'],q2s = df['qvcenter']**2-df['nucenter_ex_qv']**2,
+    #     exs = df['Excenter_qv']) # RT quasi deuteron added 2025 July 18
     # CBfit response values at data effective qv Ex:
     nus = np.sqrt(mass_nucleus**2 + df['qv']**2 + 2*mass_nucleus*df['Ex']) - mass_nucleus
     qvs = df['qv']
@@ -426,7 +387,7 @@ def calculate_bin_centering_correction(df_xsec : pd.DataFrame, mass_nucleus : fl
     df_response = calculate_response_table(df_response, a = a, z = z)
     df['RL_qvd_ex'] = df_response['rltot'].values
     df['RT_qvd_ex'] = df_response['rttot'].values
-    df['RT_qvd_ex'] = df['RT_qvd_ex'] + df['RT_QD_data'] # RT quasi deuteron added 2025 July 18
+    # df['RT_qvd_ex'] = df['RT_qvd_ex'] + df['RT_QD_data'] # RT quasi deuteron added 2025 July 18
     df['bc_qv_ex']=1.0
     for qvcenter in QVCENTERS:
         mask = (df['qvcenter'] == qvcenter) & (df['Ex'] < EX_CUT) # use Ex < EX_CUT:
@@ -477,8 +438,8 @@ def calculate_bc_qv_w2(df_xsec : pd.DataFrame, mass_nucleus : float = MASS_C12, 
     df_response = calculate_response_table(df_response, a = a, z = z)
     df['RL_qvc_w2'] = df_response['rltot'].values
     df['RT_qvc_w2'] = df_response['rttot'].values
-    df['RT_qvc_w2'] = df['RT_qvc_w2'] + rt_quasi_deuteron(nus=df['nucenter_w2_qv'],q2s = df['qvcenter']**2-df['nucenter_w2_qv']**2,
-                                exs = df['nucenter_w2_qv'] - (df['qvcenter']**2-df['nucenter_w2_qv']**2)/(2*mass_nucleus)) # RT quasi deuteron added 2025 July 18
+    # df['RT_qvc_w2'] = df['RT_qvc_w2'] + rt_quasi_deuteron(nus=df['nucenter_w2_qv'],q2s = df['qvcenter']**2-df['nucenter_w2_qv']**2,
+    #                             exs = df['nucenter_w2_qv'] - (df['qvcenter']**2-df['nucenter_w2_qv']**2)/(2*mass_nucleus)) # RT quasi deuteron added 2025 July 18
     # CBfit response values at data effective qv W2:
     nus = np.sqrt(df['qv']**2 + df['W2']) - MASS_NUCLEON
     qvs = df['qv']
@@ -486,7 +447,7 @@ def calculate_bc_qv_w2(df_xsec : pd.DataFrame, mass_nucleus : float = MASS_C12, 
     df_response = calculate_response_table(df_response, a = a, z = z)
     df['RL_qvd_w2'] = df_response['rltot'].values
     df['RT_qvd_w2'] = df_response['rttot'].values
-    df['RT_qvd_w2'] = df['RT_qvd_w2'] + df['RT_QD_data'] # RT quasi deuteron added 2025 July 18
+    # df['RT_qvd_w2'] = df['RT_qvd_w2'] + df['RT_QD_data'] # RT quasi deuteron added 2025 July 18
     df['bc_qv_w2']=1.0
     for qvcenter in QVCENTERS:
         ## Ex >= 50MeV:
