@@ -41,6 +41,8 @@ from typing import Iterable, List, Optional, Sequence, Tuple
 import numpy as np
 import pandas as pd
 
+# from .utilities import special_sigmoid, rt_quasi_deuteron
+from scipy.special import expit
 
 # -----------------------------------------------------------------------------
 # Basic helpers
@@ -63,6 +65,22 @@ def _clamp(x: float, lo: float, hi: float) -> float:
 def _exp(x: float) -> float:
     return math.exp(x)
 
+def special_sigmoid(xs : Sequence[float], center : float = 0.12, width : float = 0.005) -> Sequence[float]:
+    z = (np.asarray(xs) - center) / width
+    return expit(-z)
+
+# -----------------------------------------------------------------------------
+# Constants to scale or shift delta resonances - Ziggy 9/16/2026
+# -----------------------------------------------------------------------------
+
+# scale up or down 1st, 2nd, 3rd resonance region
+#  1.27575196  0.64803579 -0.03201123 # scipy least_squares
+SCALE_1ST_RES = 1.27575196
+SCALE_2ND_RES = 0.64803579
+SCALE_3RD_RES = 1.0
+
+# resonance contribution horizonal shift in nu
+SHIFT_NU_RES = -0.03201123
 
 # -----------------------------------------------------------------------------
 # Constants from response_Qvedges.f / other source files
@@ -336,13 +354,16 @@ def _resmod_common(sf: int, w2: float, q2: float, xval: Sequence[float], *, prot
             else:
                 sigr = width[i] * pgam[i] / denom
                 sigr = height[i] * kr[i] / k * kcmr[i] / kcm * sigr / intwidth[i]
-            # 9/14/2026: customize a delta shift.
-            # first peak: + 6%; second and further peaks: -10%.
+            # 9/16/2026: apply a delta scale up / down when q2 is low.
+            # q2 suppression -> 1 as q2 -> 0; drops to 0 sharply as q2 passes 0.03.  
+            q2_suppression = special_sigmoid(q2, center = 0.03, width= 0.005) 
             if sf == 1:
                 if i == 1:
-                    sigr *= 1.19306324
+                    sigr *= 1 + (SCALE_1ST_RES - 1) * q2_suppression
                 elif i in (2, 3, 6):
-                    sigr *= 0.69402966
+                    sigr *= 1 + (SCALE_2ND_RES - 1) * q2_suppression
+                elif i in (4, 5):
+                    sigr *= 1 + (SCALE_3RD_RES - 1) * q2_suppression
             sig_res += sigr
     sig_res *= w
     if sf == 2:
@@ -1043,8 +1064,43 @@ def csfitcomp(w2: float, q2: float, a: float, z: float, xvalc: Sequence[float], 
     _ = f2
     return sigt, sigl
 
+# -----------------------------------------------------------------------------
+# Ziggy's implementation of RT quasi deuteron contribution
+# -----------------------------------------------------------------------------
 
+def pauli_blocking(ex : float) -> float:
+    # ex in MeV
+    if ex <=20:
+        return np.exp(-73.3/ex)
+    elif 20 < ex <= 140: 
+        return 8.3714e-2 - 9.8343e-3 * ex + 4.1222e-4 * ex**2 - 3.4762e-6 * ex**3 + 9.3537e-9 * ex**4
+    else:
+        return np.exp(-24.2/ex)
 
+def quasi_deuteron(ex : float, n : int = 6, a : int = 12, z : int = 6) -> float: # ex in GeV; return GD cross-section: GeV^-2
+    ex = ex * 1e3 # convert ex to MeV
+    if ex < 2.224:
+        return 0
+    else:    
+        sigma = 397.8 * (n * z / a) * ((ex - 2.224)**(3/2)) * (ex**-3) * pauli_blocking(ex) # in mb
+        return sigma * 0.1 * 0.1975**-2 # in GeV^-2
+
+def dipole_form(q2s : Sequence[float]) -> Sequence[float]: # Q2 in GeV^2; return dipole form unitless
+    return 1 / ((1 + np.asarray(q2s) / 0.5)**5) # new value 2025 July 18
+
+def rt_quasi_deuteron(nus : Sequence[float], q2s : Sequence[float], exs : Sequence[float]) -> Sequence[float]: # return RT in MeV^-1, ex in GeV
+    QDs=[]
+    if np.ndim(exs) == 0:
+        QDs.append(quasi_deuteron(exs))
+    else:
+        for ex in np.asarray(exs):
+            QDs.append(quasi_deuteron(np.array(ex)))
+    QDs = np.asarray(QDs)
+    GEs = dipole_form(q2s)
+    GEs = np.asarray(GEs)
+    RTQD = GEs**2 * QDs * np.asarray(nus) / (2 * (np.pi**2) * ALPHA)
+    RTQD = RTQD * 1.5 * special_sigmoid(nus) # added 2025 Sep 23
+    return RTQD*1e-3 # in MeV-1
 
 # -----------------------------------------------------------------------------
 # Minimal RL/RT evaluation API
@@ -1054,7 +1110,7 @@ OUTPUT_COLUMNS = [
     "qv", "q2", "ex", "nu",
     "rttot", "rltot", "rtqe", "rlqe",
     "rtie", "rlie", "rte", "rle",
-    "rtns", "rlns"
+    "rtns", "rlns", "rtqd", "rlqd"
 ]
 
 
@@ -1090,11 +1146,11 @@ def calculate_response_point(qv: float, nu: float, *, a: float = 12.0, z: float 
     w2 = MP_MAIN * MP_MAIN + 2.0 * MP_MAIN * nu - q2
     xb = q2 / (2.0 * MP_MAIN * nu)
 
-    # total, except nuclear states
-    f1, fl = csfitcomp(w2, q2, a, z, xvalc, 1)
-    fl = 2.0 * xb * fl
-    rttot = 2.0 / MP_MAIN * f1 / 1000.0
-    rltot = qv * qv / q2 / 2.0 / MP_MAIN / xb * fl / 1000.0
+    # # total, except nuclear states (keep this block for future record - 9/17/2026)
+    # f1, fl = csfitcomp(w2, q2, a, z, xvalc, 1)
+    # fl = 2.0 * xb * fl
+    # rttot = 2.0 / MP_MAIN * f1 / 1000.0
+    # rltot = qv * qv / q2 / 2.0 / MP_MAIN / xb * fl / 1000.0
 
     # quasi elastic peak
     f1, fl = csfitcomp(w2, q2, a, z, xvalc, 2)
@@ -1107,6 +1163,24 @@ def calculate_response_point(qv: float, nu: float, *, a: float = 12.0, z: float 
     fl = 2.0 * xb * fl
     rtie = 2.0 / MP_MAIN * f1 / 1000.0
     rlie = qv * qv / q2 / 2.0 / MP_MAIN / xb * fl / 1000.0
+
+    # shifted inelastic peak - 9/17/2026
+    # shift horizontally in nu when q2 -> 0, to agree with photon data
+    # keep qv constant, get nu_shift, q2_shift, and w2_shift
+    nu_shift = nu + SHIFT_NU_RES
+    if nu_shift <= 0.0:
+        nu_shift = 0.000001
+    q2_shift = qv * qv - nu * nu
+    w2_shift = MP_MAIN * MP_MAIN + 2.0 * MP_MAIN * nu_shift - q2_shift
+    f1, fl = csfitcomp(w2_shift, q2_shift, a, z, xvalc, 3)
+    fl = 2.0 * xb * fl
+    rtie_shifted = 2.0 / MP_MAIN * f1 / 1000.0
+    rlie_shifted = qv * qv / q2 / 2.0 / MP_MAIN / xb * fl / 1000.0
+
+    # apply the inelastic shift at low q2 - 9/17/2026
+    q2_suppression = special_sigmoid(q2, center = 0.03, width= 0.005)
+    rtie = rtie + (rtie_shifted - rtie) * q2_suppression
+    rlie = rlie + (rlie_shifted - rlie) * q2_suppression
 
     # transverse enhancement
     f1, fl = csfitcomp(w2, q2, a, z, xvalc, 4)
@@ -1129,8 +1203,13 @@ def calculate_response_point(qv: float, nu: float, *, a: float = 12.0, z: float 
     if rtns <= 1.0e-40:
         rtns = 0.0
 
-    rltot += rlns
-    rttot += rtns
+    # quasi deuteron - 9/17/2026
+    rtqd = rt_quasi_deuteron(nus = nu, q2s = q2, exs = ex)
+    rlqd = 0.0
+
+    # total, use summation instead of csfitcomp(w2, q2, a, z, xvalc, 1)
+    rttot = rtns + rtqd + rtqe + rte + rtie
+    rltot = rlns + rlqd + rlqe + rle + rlie
 
     return {
         "qv": qv,
@@ -1146,7 +1225,9 @@ def calculate_response_point(qv: float, nu: float, *, a: float = 12.0, z: float 
         "rte": rte,
         "rle": rle,
         "rtns": rtns,
-        "rlns": rlns
+        "rlns": rlns,
+        "rtqd": rtqd,
+        "rlqd": rlqd
     }
 
 
@@ -1241,7 +1322,9 @@ def calculate_response_table(table: pd.DataFrame | np.ndarray | Iterable[tuple[f
                 "rte": 0.0,
                 "rle": 0.0,
                 "rtns": 0.0,
-                "rlns": 0.0})
+                "rlns": 0.0,
+                "rtqd": 0.0,
+                "rlqd": 0.0})
 
     return pd.DataFrame(rows, columns=OUTPUT_COLUMNS)
 
