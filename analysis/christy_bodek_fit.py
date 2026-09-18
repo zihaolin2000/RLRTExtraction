@@ -70,17 +70,17 @@ def special_sigmoid(xs : Sequence[float], center : float = 0.12, width : float =
     return expit(-z)
 
 # -----------------------------------------------------------------------------
-# Constants to scale or shift delta resonances - Ziggy 9/16/2026
+# Constants to scale or shift delta resonances - Ziggy 9/18/2026
+# Use scipy least_squares to fit the photo-production data with nu > 0.15GeV,
+# fit for SCALE_RES1, SCALE_RES23, SCALE_RES6, SHIFT_NU_RES1; 
+# the i=4,5,7 peaks are not scaled.
 # -----------------------------------------------------------------------------
 
-# scale up or down 1st, 2nd, 3rd resonance region
-#  1.27575196  0.64803579 -0.03201123 # scipy least_squares
-SCALE_1ST_RES = 1.27575196
-SCALE_2ND_RES = 0.64803579
-SCALE_3RD_RES = 1.0
+# scale up or down resonance peaks (normalization)
+SCALE_RES1, SCALE_RES23, SCALE_RES45, SCALE_RES6, SCALE_RES7 = 1.22391088, 0.29452801, 1.0, 1.97114798, 1.0 
 
-# resonance contribution horizonal shift in nu
-SHIFT_NU_RES = -0.03201123
+# shift the 1st resonance peak shift horizontally in nu (GeV)
+SHIFT_NU_RES1 = -0.02924503
 
 # -----------------------------------------------------------------------------
 # Constants from response_Qvedges.f / other source files
@@ -353,17 +353,40 @@ def _resmod_common(sf: int, w2: float, q2: float, xval: Sequence[float], *, prot
                 sigr = 0.0
             else:
                 sigr = width[i] * pgam[i] / denom
-                sigr = height[i] * kr[i] / k * kcmr[i] / kcm * sigr / intwidth[i]
-            # 9/16/2026: apply a delta scale up / down when q2 is low.
-            # q2 suppression -> 1 as q2 -> 0; drops to 0 sharply as q2 passes 0.03.  
-            q2_suppression = special_sigmoid(q2, center = 0.03, width= 0.005) 
+                sigr = height[i] * kr[i] / k * kcmr[i] / kcm * sigr / intwidth[i]  
+
             if sf == 1:
-                if i == 1:
-                    sigr *= 1 + (SCALE_1ST_RES - 1) * q2_suppression
-                elif i in (2, 3, 6):
-                    sigr *= 1 + (SCALE_2ND_RES - 1) * q2_suppression
-                elif i in (4, 5):
-                    sigr *= 1 + (SCALE_3RD_RES - 1) * q2_suppression
+
+                # 9/18/2026: apply a delta scale up / down when q2 is low.
+                # q2 suppression -> 1 as q2 -> 0; drops to 0 sharply as q2 passes around 0.03 GeV^2.
+                q2_suppression = special_sigmoid(q2, center = 0.03, width= 0.005)
+
+                if i == 1: # scale and shift the 1st RES peak
+                    # evaluate horizontal shift in nu:
+                    nu = (w2 + q2 - MP_MAIN**2 )/(2*MP_MAIN)
+                    nu_shift = nu + SHIFT_NU_RES1
+                    if nu_shift <= 0.0:
+                        nu_shift = 0.0001
+                    w2_shift = MP_MAIN**2 + 2*MP_MAIN*nu_shift - q2
+                    denom_shift = (w2_shift - mass[i] ** 2) ** 2 + (mass[i] * width[i]) ** 2
+                    sigr_shift = 0.0
+                    if denom_shift <= 0.0 or intwidth[i] == 0.0:
+                        sigr_shift = 0.0
+                    else:
+                        sigr_shift = width[i] * pgam[i] / denom_shift
+                        sigr_shift = height[i] * kr[i] / k * kcmr[i] / kcm * sigr_shift / intwidth[i]
+                    # apply normalization scaling and horizontal shift with q2 suppression:
+                    sigr = sigr +  (SCALE_RES1 * sigr_shift - sigr) * q2_suppression
+                    
+                elif i in (2, 3): # scale the 2nd, 3rd RES peaks together
+                    sigr *= 1 + (SCALE_RES23 - 1) * q2_suppression
+                elif i in (4, 5): # scale the 4th, 5th RES peaks together
+                    sigr *= 1 + (SCALE_RES45 - 1) * q2_suppression
+                elif i == 6: # scale the 6th RES peak
+                    sigr *= 1 + (SCALE_RES6 - 1) * q2_suppression
+                elif i == 7: # scale the 7th RES peak
+                    sigr *= 1 + (SCALE_RES7 - 1) * q2_suppression
+
             sig_res += sigr
     sig_res *= w
     if sf == 2:
@@ -1164,23 +1187,23 @@ def calculate_response_point(qv: float, nu: float, *, a: float = 12.0, z: float 
     rtie = 2.0 / MP_MAIN * f1 / 1000.0
     rlie = qv * qv / q2 / 2.0 / MP_MAIN / xb * fl / 1000.0
 
-    # shifted inelastic peak - 9/17/2026
-    # shift horizontally in nu when q2 -> 0, to agree with photon data
-    # keep qv constant, get nu_shift, q2_shift, and w2_shift
-    nu_shift = nu + SHIFT_NU_RES
-    if nu_shift <= 0.0:
-        nu_shift = 0.000001
-    q2_shift = qv * qv - nu * nu
-    w2_shift = MP_MAIN * MP_MAIN + 2.0 * MP_MAIN * nu_shift - q2_shift
-    f1, fl = csfitcomp(w2_shift, q2_shift, a, z, xvalc, 3)
-    fl = 2.0 * xb * fl
-    rtie_shifted = 2.0 / MP_MAIN * f1 / 1000.0
-    rlie_shifted = qv * qv / q2 / 2.0 / MP_MAIN / xb * fl / 1000.0
+    # # shifted inelastic peak - 9/17/2026
+    # # shift horizontally in nu when q2 -> 0, to agree with photon data
+    # # keep qv constant, get nu_shift, q2_shift, and w2_shift
+    # nu_shift = nu + SHIFT_NU_RES
+    # if nu_shift <= 0.0:
+    #     nu_shift = 0.000001
+    # q2_shift = qv * qv - nu * nu
+    # w2_shift = MP_MAIN * MP_MAIN + 2.0 * MP_MAIN * nu_shift - q2_shift
+    # f1, fl = csfitcomp(w2_shift, q2_shift, a, z, xvalc, 3)
+    # fl = 2.0 * xb * fl
+    # rtie_shifted = 2.0 / MP_MAIN * f1 / 1000.0
+    # rlie_shifted = qv * qv / q2 / 2.0 / MP_MAIN / xb * fl / 1000.0
 
-    # apply the inelastic shift at low q2 - 9/17/2026
-    q2_suppression = special_sigmoid(q2, center = 0.03, width= 0.005)
-    rtie = rtie + (rtie_shifted - rtie) * q2_suppression
-    rlie = rlie + (rlie_shifted - rlie) * q2_suppression
+    # # apply the inelastic shift at low q2 - 9/17/2026
+    # q2_suppression = special_sigmoid(q2, center = 0.03, width= 0.005)
+    # rtie = rtie + (rtie_shifted - rtie) * q2_suppression
+    # rlie = rlie + (rlie_shifted - rlie) * q2_suppression
 
     # transverse enhancement
     f1, fl = csfitcomp(w2, q2, a, z, xvalc, 4)
