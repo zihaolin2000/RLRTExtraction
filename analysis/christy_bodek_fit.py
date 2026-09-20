@@ -1227,7 +1227,7 @@ def calculate_response_point(qv: float, nu: float, *, a: float = 12.0, z: float 
         rtns = 0.0
 
     # quasi deuteron - 9/17/2026
-    rtqd = rt_quasi_deuteron(nus = nu, q2s = q2, exs = ex)
+    rtqd = rt_quasi_deuteron(nus = nu, q2s = q2, exs = ex)[0] # single value sequence
     rlqd = 0.0
 
     # total, use summation instead of csfitcomp(w2, q2, a, z, xvalc, 1)
