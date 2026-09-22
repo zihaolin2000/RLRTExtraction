@@ -358,8 +358,8 @@ def _resmod_common(sf: int, w2: float, q2: float, xval: Sequence[float], *, prot
             if sf == 1:
 
                 # 9/18/2026: apply a delta scale up / down when q2 is low.
-                # q2 suppression -> 1 as q2 -> 0; drops to 0 sharply as q2 passes around 0.03 GeV^2.
-                q2_suppression = special_sigmoid(q2, center = 0.03, width= 0.005)
+                # q2 suppression -> 1 as q2 -> 0; drops to 0 sharply as q2 passes around 0.008 GeV^2.
+                q2_suppression = special_sigmoid(q2, center = 0.008, width= 0.001)
 
                 if i == 1: # scale and shift the 1st RES peak
                     # evaluate horizontal shift in nu:
