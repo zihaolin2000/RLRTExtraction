@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 from scipy.interpolate import interp1d
 from pathlib import Path
-from .utilities import rt_quasi_deuteron
+# from .utilities import rt_quasi_deuteron
 from .presets import *
 from .christy_bodek_fit import calculate_cross_section_table
 
