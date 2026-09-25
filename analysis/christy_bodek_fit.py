@@ -77,7 +77,9 @@ def special_sigmoid(xs : Sequence[float], center : float = 0.12, width : float =
 # -----------------------------------------------------------------------------
 
 # scale up or down resonance peaks (normalization)
-SCALE_RES1, SCALE_RES23, SCALE_RES45, SCALE_RES6, SCALE_RES7 = 1.22391088, 0.29452801, 1.0, 1.97114798, 1.0 
+SCALE_RES1, SCALE_RES23, SCALE_RES45, SCALE_RES6, SCALE_RES7 = 1.22391088, 0.29452801, 1.0, 1.97114798, 1.0
+# Q2_SUPPRESSION_CENTER, Q2_SUPPRESSION_WIDTH = 0.008, 0.002
+Q2_SUPPRESSION_CENTER, Q2_SUPPRESSION_WIDTH = 0.08, 0.02
 
 # shift the 1st resonance peak shift horizontally in nu (GeV)
 SHIFT_NU_RES1 = -0.02924503
@@ -359,7 +361,7 @@ def _resmod_common(sf: int, w2: float, q2: float, xval: Sequence[float], *, prot
 
                 # 9/18/2026: apply a delta scale up / down when q2 is low.
                 # q2 suppression -> 1 as q2 -> 0; drops to 0 sharply as q2 passes around 0.008 GeV^2.
-                q2_suppression = special_sigmoid(q2, center = 0.008, width= 0.001)
+                q2_suppression = special_sigmoid(q2, center = Q2_SUPPRESSION_CENTER, width= Q2_SUPPRESSION_WIDTH)
 
                 if i == 1: # scale and shift the 1st RES peak
                     # evaluate horizontal shift in nu:
