@@ -41,7 +41,7 @@ ERRORBAR_STYLES = {
     'Buki':{'color':'blue','markersize':0, 'capsize':0, 'lw':1, 'fmt':'D', 'elinewidth':1, 'alpha':0.5, 'zorder':1},
     'Sheren':{'ecolor':'deepskyblue','markersize':0, 'capsize':0, 'lw':1, 'fmt':'D', 'elinewidth':1, 'alpha':0.5, 'zorder':1},
     'Baran':{'ecolor':'gray','markersize':0, 'capsize':0, 'lw':1, 'fmt':'D', 'elinewidth':1, 'alpha':0.5, 'zorder':1},
-    'Photo-production':{'color':'lime','markersize':0, 'capsize':0, 'lw':1, 'fmt':'D', 'elinewidth':1, 'alpha':0.5, 'zorder':1}
+    'Photo-production':{'color':'lime','markersize':0, 'capsize':0, 'lw':1, 'fmt':'D', 'elinewidth':1, 'alpha':1, 'zorder':1}
 }
 
 # line plotting styles
@@ -155,7 +155,8 @@ RLRT_Q2INSET_XLIMS = {
     3.75:[1.7,2.7]
 }
 
-def plot_response_qvbin(df_this_analysis : pd.DataFrame, qvcenters : list[float] = [0.3, 0.38, 0.57], figsize_per_row : tuple[float, float] = (11, 1.8),
+def plot_response_qvbin(df_this_analysis : pd.DataFrame, qvcenters : list[float] = [0.3, 0.38, 0.57], 
+        figsize_per_row : tuple[float, float] = (11, 1.8), bbox_to_anchor=(0.5, -0.02),
         sharex : bool = False, figshow : bool = False, theory_plot_list : list[str] = THEORY_QVPLOT_LIST, sheet_CBfit : pd.DataFrame = None,
         exp_plot_list : list[str] = EXP_QVPLOT_LIST, mc_plot_list : list[str] = MC_QVPLOT_LIST) -> Figure:
     # TODO: add comments
@@ -189,12 +190,10 @@ def plot_response_qvbin(df_this_analysis : pd.DataFrame, qvcenters : list[float]
         ax_rt.axvline(x=qvcenter, color = 'brown', linestyle='dashdot',lw=1)
 
         # plot Christy Bodek fit
-        # 25 Sep 25: shift inelastic to left by 18 MeV; 25 July 18: RT quasi deuteron added
-        #  FIXME: 26 May 7 inelastic peak shift is removed for now. address later.
         ChristyBodekFit = sheet_CBfit.loc[sheet_CBfit['qv']==qvcenter].copy()
-        ax_rl.plot(ChristyBodekFit['nu'],ChristyBodekFit["rltot"],color='black',label="$R_L$(total), $R_T$(total) Christy-Bodek-2024", linestyle='solid',lw=0.8, zorder=0)
+        ax_rl.plot(ChristyBodekFit['nu'],ChristyBodekFit["rltot"],color='black',label="$R_L$(total), $R_T$(total) Christy-Bodek-2026", linestyle='solid',lw=0.8, zorder=0)
         ax_rt.plot(ChristyBodekFit['nu'],ChristyBodekFit["rttot"], color='black', linestyle='solid',lw=0.8, zorder=0)
-        ax_rl.plot(ChristyBodekFit['nu'],ChristyBodekFit["rlqe"], color='black',label="$R_L$(QE), $R_T$(QE+TE) Christy-Bodek-2024", linestyle='dotted',lw=0.8, zorder=0)
+        ax_rl.plot(ChristyBodekFit['nu'],ChristyBodekFit["rlqe"], color='black',label="$R_L$(QE), $R_T$(QE+TE) Christy-Bodek-2026", linestyle='dotted',lw=0.8, zorder=0)
         ax_rt.plot(ChristyBodekFit['nu'],ChristyBodekFit["rtqe"] + ChristyBodekFit["rte"], color='black', linestyle='dotted',lw=0.8, zorder=0)
 
         # plot mc as lines
@@ -295,10 +294,7 @@ def plot_response_qvbin(df_this_analysis : pd.DataFrame, qvcenters : list[float]
     unique = dict(zip(labels, handles))
     handles = list(unique.values())
     labels = list(unique.keys())
-    if len(qvcenters) == 3:
-        fig.legend(handles, labels, loc="lower center", ncol=4, bbox_to_anchor=(0.5, -0.08), frameon=False)
-    else:
-        fig.legend(handles, labels, loc="lower center", ncol=4, bbox_to_anchor=(0.5, -0.02), frameon=False)
+    fig.legend(handles, labels, loc="lower center", ncol=4, bbox_to_anchor=bbox_to_anchor, frameon=False)
     # fig.tight_layout()
     if figshow:
         plt.show()
@@ -306,7 +302,8 @@ def plot_response_qvbin(df_this_analysis : pd.DataFrame, qvcenters : list[float]
 
     return fig
 
-def plot_response_q2bin(df_this_analysis : pd.DataFrame, q2centers : list[float] = [0.093, 0.12, 0.16], figsize_per_row : tuple[float, float] = (11, 1.8),
+def plot_response_q2bin(df_this_analysis : pd.DataFrame, q2centers : list[float] = [0.093, 0.12, 0.16],
+        figsize_per_row : tuple[float, float] = (11, 1.8), bbox_to_anchor=(0.5, -0.02),
         sharex : bool = False, figshow : bool = False, theory_plot_list : list[str] = THEORY_Q2PLOT_LIST, sheet_CBfit : pd.DataFrame = None,
         exp_plot_list : list[str] = EXP_Q2PLOT_LIST, mc_plot_list : list[str] = MC_Q2PLOT_LIST) -> Figure:
     
@@ -334,11 +331,9 @@ def plot_response_q2bin(df_this_analysis : pd.DataFrame, q2centers : list[float]
         nu_wmax = 0.025 + (W_PLOT_LIST[2]**2 + q2center - MASS_NUCLEON**2)/(2 * MASS_NUCLEON)
 
         # plot Christy Bodek fit
-        # 25 Sep 25: shift inelastic to left by 18 MeV; 25 July 18: RT quasi deuteron added
-        #  FIXME: 26 May 7 inelastic peak shift is removed for now. address later.
         ChristyBodekFit = sheet_CBfit.loc[sheet_CBfit['q2']==q2center].copy()
-        ax_rl.plot(ChristyBodekFit['nu'],ChristyBodekFit["rltot"],color='black',label="$R_L$(total), $R_T$(total) Christy-Bodek-2024", linestyle='solid',lw=0.8, zorder=0)
-        ax_rl.plot(ChristyBodekFit['nu'],ChristyBodekFit["rlqe"], color='black',label="$R_L$(QE), $R_T$(QE+TE) Christy-Bodek-2024", linestyle='dotted',lw=0.8, zorder=0)
+        ax_rl.plot(ChristyBodekFit['nu'],ChristyBodekFit["rltot"],color='black',label="$R_L$(total), $R_T$(total) Christy-Bodek-2026", linestyle='solid',lw=0.8, zorder=0)
+        ax_rl.plot(ChristyBodekFit['nu'],ChristyBodekFit["rlqe"], color='black',label="$R_L$(QE), $R_T$(QE+TE) Christy-Bodek-2026", linestyle='dotted',lw=0.8, zorder=0)
 
         # plot mc as lines
         for mc in mc_plot_list:
@@ -383,8 +378,6 @@ def plot_response_q2bin(df_this_analysis : pd.DataFrame, q2centers : list[float]
         nu_wmax = 0.025 + (W_PLOT_LIST[2]**2 + q2center - MASS_NUCLEON**2)/(2 * MASS_NUCLEON)
 
         # plot Christy Bodek fit
-        # 25 Sep 25: shift inelastic to left by 18 MeV; 25 July 18: RT quasi deuteron added
-        #  FIXME: 26 May 7 inelastic peak shift is removed for now. address later.
         ChristyBodekFit = sheet_CBfit.loc[sheet_CBfit['q2']==q2center].copy()
         ax_rt.plot(ChristyBodekFit['nu'],ChristyBodekFit["rttot"], color='black', linestyle='solid',lw=0.8, zorder=0)
         ax_rt.plot(ChristyBodekFit['nu'],ChristyBodekFit["rtqe"] + ChristyBodekFit["rte"], color='black', linestyle='dotted',lw=0.8, zorder=0)
@@ -482,10 +475,7 @@ def plot_response_q2bin(df_this_analysis : pd.DataFrame, q2centers : list[float]
     unique = dict(zip(labels, handles))
     handles = list(unique.values())
     labels = list(unique.keys())
-    if len(q2centers) == 3:
-        fig.legend(handles, labels, loc="lower center", ncol=4, bbox_to_anchor=(0.5, -0.08), frameon=False)
-    else:
-        fig.legend(handles, labels, loc="lower center", ncol=4, bbox_to_anchor=(0.5, -0.015), frameon=False)
+    fig.legend(handles, labels, loc="lower center", ncol=4, bbox_to_anchor=bbox_to_anchor, frameon=False)
 
     # fig.tight_layout()
     if figshow:
