@@ -189,7 +189,7 @@ def plot_response_qvbin(df_this_analysis : pd.DataFrame, qvcenters : list[float]
                 ax_rt.axvline(x = nu_w, color = W_PLOT_COLORS[w], linestyle = 'dashdot', lw = 1, zorder=-2)
 
         # plot q2 = 0 vertical dash line
-        ax_rl.axvline(x=qvcenter, color = 'brown', linestyle='dashdot',lw=1,label=f'$Q^2$ = 0 (GeV/c)$^2$')
+        ax_rl.axvline(x=qvcenter, color = 'brown', linestyle='dashdot',lw=1,label=f'$Q^2$ = 0 GeV$^2$/c$^2$')
         ax_rt.axvline(x=qvcenter, color = 'brown', linestyle='dashdot',lw=1)
 
         # plot Christy Bodek fit
