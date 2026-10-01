@@ -247,6 +247,8 @@ def plot_response_qvbin(df_this_analysis : pd.DataFrame, qvcenters : list[float]
 
         # plot this analysis
         df_qvbin = df_this_analysis.loc[df_this_analysis['qvcenter'] == qvcenter]
+        if qvcenter > 0.1 and qvcenter <= 0.475:
+            df_qvbin = df_qvbin.loc[df_qvbin['ex']>=0.03]
         if qvcenter in [0.148,0.167,0.205,0.24,0.3]:
             # avoid overlapping with Yamaguchi
             nu_yam = sheet_exp_rl.loc[(sheet_exp_rl['qv']==qvcenter) & (sheet_exp_rl['experiment']=='Yamaguchi')]['nu'].max()
@@ -384,6 +386,8 @@ def plot_response_q2bin(df_this_analysis : pd.DataFrame, q2centers : list[float]
 
         # plot this analysis
         df_q2bin = df_this_analysis.loc[df_this_analysis['q2center'] == q2center]
+        if q2center > 0.01 and q2center <= 0.16:
+            df_q2bin = df_q2bin.loc[df_q2bin['ex']>=0.03]
         if q2center in [0.020, 0.026, 0.040, 0.056, 0.093]:
             # avoid overlapping with Yamaguchi
             nu_yam = sheet_exp_rl.loc[(sheet_exp_rl['q2']==q2center) & (sheet_exp_rl['experiment']=='Yamaguchi')]['nu'].max()
@@ -441,6 +445,8 @@ def plot_response_q2bin(df_this_analysis : pd.DataFrame, q2centers : list[float]
 
         # plot this analysis
         df_q2bin = df_this_analysis.loc[df_this_analysis['q2center'] == q2center]
+        if q2center > 0.01 and q2center <= 0.16:
+            df_q2bin = df_q2bin.loc[df_q2bin['ex']>=0.03]
         if q2center in [0.02, 0.026, 0.04, 0.056, 0.093]:
             # avoid overlapping with Yamaguchi
             nu_yam = sheet_exp_rt.loc[(sheet_exp_rt['q2']==q2center) & (sheet_exp_rt['experiment']=='Yamaguchi')]['nu'].max()
