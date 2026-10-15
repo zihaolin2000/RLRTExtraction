@@ -8,7 +8,9 @@ from .christy_bodek_fit import calculate_response_table
 
 # For development: make individual rosenbluth seperation plot
 _plot_rosenbluth = False
+# _plot_rosenbluth = True
 _plot_rosenbluth_combined = False
+# _plot_rosenbluth_combined = True
 
 def _plot_rosenbluth_xsec_epsilon(df, qvcenter, a_opt, b_opt, chi2_ndf, nuc, w2center):
     plt.figure(figsize=(15,10))
@@ -46,8 +48,8 @@ def _plot_rosenbluth_xsec_epsilon_combined(df, qvcenter, df_rlrt):
             df_points = df_qvbin.loc[(df_qvbin['W2center_qv']==w2center)]
             plt.errorbar(df_points['epsilon'], df_points['rosenbluth_xsec'], yerr=df_points['rosenbluth_xsec_err'], 
                 fmt='o', alpha=0.5)
-            plt.errorbar(df_points['epsilon'], df_points['Hcc_Sig(GeV)'], yerr=df_points['Hcc_error(GeV)'], 
-                capsize=3, alpha=0.5)
+            # plt.errorbar(df_points['epsilon'], df_points['Hcc_Sig(GeV)'], yerr=df_points['Hcc_error(GeV)'], 
+            #     capsize=3, alpha=0.5)
             # plt.scatter(df_points['epsilon'], df_points['rosenbluth_xsec'],alpha=0.5)
             xs = np.linspace(0,1,10)
             ys = linear_model(xs, a=a_opt, b=b_opt)
@@ -64,6 +66,54 @@ def _plot_rosenbluth_xsec_epsilon_combined(df, qvcenter, df_rlrt):
                         row['Hcc_Sig(GeV)'],
                         # f'{row_ds}:nu={round(row_nu,6)}'
                         f'{row_ds}:nu={round(row_nu,6)},    q={round(row_qv,4)}, bc={round(row_bc,3)}'
+                    )
+    plt.xlabel('epsilon')
+    plt.ylabel('rosenbluth xsec')
+
+def _plot_rosenbluth_xsec_epsilon_combined_q2_ex(df, q2center, df_rlrt):
+    df_q2bin = df.copy()
+    df_q2bin = df_q2bin.sort_values(by='epsilon')
+
+    plt.figure(figsize=(40,30), dpi=150)
+    for Excenter in np.sort(df_q2bin['Excenter_q2'].unique()):
+        # nuc = np.sqrt(qvcenter**2+w2center)-MASS_NUCLEON
+        nuel = q2center/(2*MASS_C12)
+        nuc = Excenter + nuel
+        # if nuc in df_rlrt['nu'].unique() and nuc>0.35:
+        if nuc in df_rlrt['nu'].unique():
+            # qvc2 = qvcenter**2
+            # q2center = qvc2-nuc**2
+            # q2center = qv**2 - nuc**2
+            qvc2 = q2center + nuc**2
+            df_result = df_rlrt.loc[df_rlrt['nu']==nuc]
+            rl = df_result['rl'].iloc[0]
+            rt = df_result['rt'].iloc[0]
+            a_opt = rl
+            b_opt = rt*qvc2 / (2*q2center)
+            df_points = df_q2bin.loc[(df_q2bin['Excenter_q2']==Excenter)]
+            plt.errorbar(df_points['epsilon'], df_points['rosenbluth_xsec'], yerr=df_points['rosenbluth_xsec_err'], 
+                fmt='o', alpha=0.5)
+            plt.errorbar(df_points['epsilon'], df_points['Hcc_Sig(GeV)'], yerr=df_points['Hcc_error(GeV)'], 
+                capsize=3, alpha=0.5)
+            # plt.scatter(df_points['epsilon'], df_points['rosenbluth_xsec'],alpha=0.5)
+            xs = np.linspace(0,1,10)
+            ys = linear_model(xs, a=a_opt, b=b_opt)
+            plt.plot(xs, ys, label=f'y = {round(a_opt, 3)} * x + {round(b_opt, 3)}', alpha=0.7, linestyle='--')
+            plt.text(xs[0]-0.1, ys[0], f'y = {round(a_opt, 3)} * x + {round(b_opt, 3)}, nuc={round(nuc,6)}')
+            for index, row in df_points.iterrows():
+                row_ds = row['dataSet']
+                # row_qv = row['qv']
+                row_q2 = row['q2']
+                row_nu = row['nu']
+                # row_bc = row['bc_qv_w2']
+                row_bc = row['bc_q2_ex']
+
+                # plt.text(df_ds['epsilon']+0.01, df_ds['rosenbluth_xsec']-0.01, f'{ds}:nu={round(row_nu,3)}',alpha=0.7)
+                plt.text(row['epsilon'], 
+                        # row['rosenbluth_xsec'],
+                        row['Hcc_Sig(GeV)'],
+                        # f'{row_ds}:nu={round(row_nu,6)}'
+                        f'{row_ds}:nu={round(row_nu,6)},    q2={round(row_q2,4)}, bc={round(row_bc,3)}'
                     )
     plt.xlabel('epsilon')
     plt.xlabel('rosenbluth xsec')
@@ -258,7 +308,8 @@ def prepare_dataframe(df_data : pd.DataFrame, vcoul : float = 0.0031, syst_err :
     # df=df.dropna()
     return df
 
-def calculate_bin_centering_correction(df_xsec : pd.DataFrame, mass_nucleus : float = MASS_C12, a: float = 12.0, z: float = 6.0) -> pd.DataFrame:
+def calculate_bin_centering_correction(df_xsec : pd.DataFrame, mass_nucleus : float = MASS_C12, a: float = 12.0, 
+        z: float = 6.0, q2centers : list[float] = Q2CENTERS, qvcenters : list[float] = QVCENTERS) -> pd.DataFrame:
     """
     Calculate bin-centering correction factors for Rosenbluth reduced cross
     section.
@@ -279,6 +330,10 @@ def calculate_bin_centering_correction(df_xsec : pd.DataFrame, mass_nucleus : fl
         Nuclear mass number A.
     z : float
         Nuclear charge Z.
+    q2centers : list[float]
+        Q2 centers in GeV^2.
+    qvcenters : list[float]
+        q3 centers in GeV.
 
     Returns
     ----------
@@ -306,7 +361,7 @@ def calculate_bin_centering_correction(df_xsec : pd.DataFrame, mass_nucleus : fl
     df['RT_q2d_w2'] = df_response['rttot'].values
     # df['RT_q2d_w2'] = df['RT_q2d_w2'] + df['RT_QD_data'] # RT quasi deuteron added 2025 July 18
     df['bc_q2_w2']=1.0
-    for Q2center in Q2CENTERS:
+    for Q2center in q2centers:
         mask = (df['Q2center'] == Q2center) & (df['Ex'] >= EX_CUT) # use Ex >= EX_CUT
         df.loc[mask, 'bc_q2_w2']=(df.loc[mask, 'epcenter_w2_q2']*df.loc[mask, 'RL_q2c_w2']
                 +0.5*((Q2center+df.loc[mask, 'nucenter_w2_q2']**2)/Q2center)*df.loc[mask, 'RT_q2c_w2']
@@ -332,7 +387,7 @@ def calculate_bin_centering_correction(df_xsec : pd.DataFrame, mass_nucleus : fl
     df['RT_q2d_ex'] = df_response['rttot'].values
     # df['RT_q2d_ex'] = df['RT_q2d_ex'] + + df['RT_QD_data'] # RT quasi deuteron added 2025 July 18
     df['bc_q2_ex']=1.0
-    for Q2center in Q2CENTERS:
+    for Q2center in q2centers:
         mask = (df['Q2center'] == Q2center) & (df['Ex'] < EX_CUT) # use Ex < EX_CUT
         if Q2center == 0.01:
             mask = (df['Q2center'] == Q2center) & (df['Ex'] < EX_CUT_LOWQ)
@@ -361,7 +416,7 @@ def calculate_bin_centering_correction(df_xsec : pd.DataFrame, mass_nucleus : fl
     df['RT_qvd_w2'] = df_response['rttot'].values
     # df['RT_qvd_w2'] = df['RT_qvd_w2'] + df['RT_QD_data'] # RT quasi deuteron added 2025 July 18
     df['bc_qv_w2']=1.0
-    for qvcenter in QVCENTERS:
+    for qvcenter in qvcenters:
         ## Ex >= 50MeV:
         mask = (df['qvcenter'] == qvcenter) & (df['Ex'] >= EX_CUT) # use Ex >= EX_CUT
         df.loc[mask, 'bc_qv_w2']=(df.loc[mask, 'epcenter_w2_qv']*df.loc[mask, 'RL_qvc_w2']
@@ -389,7 +444,7 @@ def calculate_bin_centering_correction(df_xsec : pd.DataFrame, mass_nucleus : fl
     df['RT_qvd_ex'] = df_response['rttot'].values
     # df['RT_qvd_ex'] = df['RT_qvd_ex'] + df['RT_QD_data'] # RT quasi deuteron added 2025 July 18
     df['bc_qv_ex']=1.0
-    for qvcenter in QVCENTERS:
+    for qvcenter in qvcenters:
         mask = (df['qvcenter'] == qvcenter) & (df['Ex'] < EX_CUT) # use Ex < EX_CUT:
         if qvcenter == 0.1:
             mask = (df['qvcenter'] == qvcenter) & (df['Ex'] < EX_CUT_LOWQ)
@@ -503,7 +558,7 @@ def extract_response_q2bin_w2center(df : pd.DataFrame, q2center : float = 0.01, 
     return df_rlrt
 
 def extract_response_q2bin_excenter(df : pd.DataFrame, q2center : float = 0.01, bin_centering : bool = True, 
-        absolute_sigma : bool = True, min_epsilon_range : int = 0.03, mass_nucleus : float = MASS_C12):
+        absolute_sigma : bool = True, min_epsilon_range : float = 0.3, mass_nucleus : float = MASS_C12):
     if q2center <= 0.01:
         df_q2bin = df.loc[(df['Q2center'] == q2center) & (df['Ex'] < EX_CUT_LOWQ)].copy()
     else:
@@ -537,12 +592,26 @@ def extract_response_q2bin_excenter(df : pd.DataFrame, q2center : float = 0.01, 
             rterr = (2*b_err*q2center/qvc2)
             df_rlrt.append({'q2center':q2center,'nu':nuc,'w2':w2c,'ex':excenter,'rl':rl,'rlerr':rlerr,'rt':rt,'rterr':rterr,'chi2':chi2,
                     'num_points':len(y)})
-    
+            if q2center == 0.01 and _plot_rosenbluth:
+                plt.figure(figsize=(7,4), dpi=150)
+                for ds in df_exbin['dataSet'].unique():
+                    df_ds = df_exbin.loc[df_exbin['dataSet']==ds]
+                    colors={1:'deepskyblue', 18:'violet', 22:'limegreen', 23:'darkorange'}
+                    # plt.errorbar(df_ds['epsilon'], df_ds['rosenbluth_xsec'],fmt='.', yerr=df_ds['rosenbluth_xsec_err'], label=f'{ds}:{DATASETS[ds]}')
+                    for id, row in df_ds.iterrows():
+                        bc = round(row['bc_q2_ex'], 3)
+                        plt.errorbar(row['epsilon'], row['rosenbluth_xsec'],fmt='.', yerr=row['rosenbluth_xsec_err'], label=f'{ds}: bc={bc}',  color=colors[ds])
+
+                        # plt.errorbar(row['epsilon'], row['rosenbluth_xsec'],fmt='.', yerr=row['rosenbluth_xsec_err'], label=f'{ds}: bc={}', color=colors[ds])
+                plt.plot(np.linspace(0,1,10), linear_model(np.linspace(0,1,10), a_opt, b_opt), label=f'y = {round(a_opt, 3)} * x + {round(b_opt,3)}')
+                plt.title(f'nu={round(nuc,3)}, RL={round(rl,3)}, RLerr={round(rlerr,3)}, RT={round(rt,3)}, RTerr={round(rterr,3)}')
+                plt.legend()
+                plt.show()
     df_rlrt = pd.DataFrame(df_rlrt)
     return df_rlrt
     
 def extract_response_qvbin_w2center(df : pd.DataFrame, qvcenter : float = 0.01, bin_centering : bool = True,
-        absolute_sigma : bool = True, min_epsilon_range : int = 0.3, mass_nucleus : float = MASS_C12) -> pd.DataFrame:
+        absolute_sigma : bool = True, min_epsilon_range : float = 0.3, mass_nucleus : float = MASS_C12) -> pd.DataFrame:
     if qvcenter <= 0.1:
         df_qvbin = df.loc[(df['qvcenter']==qvcenter) & (df['Ex']>=EX_CUT_LOWQ)].copy()
     else:
