@@ -382,6 +382,7 @@ def calculate_bin_centering_correction(df_xsec : pd.DataFrame, mass_nucleus : fl
     # # CBfit response values at data effective Q2 Ex:
     nus = df['Ex'] + df['Q2']/(2*mass_nucleus)
     qvs = np.sqrt(df['Q2'] + nus**2)
+    df_response = pd.DataFrame({'qv':qvs, 'nu':nus})
     df_response = calculate_response_table(df_response, a = a, z = z)
     df['RL_q2d_ex'] = df_response['rltot'].values
     df['RT_q2d_ex'] = df_response['rttot'].values
