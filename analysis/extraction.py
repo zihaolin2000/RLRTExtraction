@@ -12,21 +12,32 @@ _plot_rosenbluth = False
 _plot_rosenbluth_combined = False
 # _plot_rosenbluth_combined = True
 
-def _plot_rosenbluth_xsec_epsilon(df, qvcenter, a_opt, b_opt, chi2_ndf, nuc, w2center):
-    plt.figure(figsize=(15,10))
+def _plot_rosenbluth_xsec_epsilon(df, qvcenter, a_opt, b_opt, chi2_ndf, nuc, w2center, bin_centering = True):
+    plt.figure(figsize=(10,10), dpi=300)
+    xcol = "epcenter_w2_qv" if bin_centering else "epsilon"
     for ds in df['dataSet'].unique():
         df_ds = df.loc[df['dataSet'] == ds]
-        plt.errorbar(df_ds['epsilon'], df_ds['rosenbluth_xsec'], yerr=df_ds['rosenbluth_xsec_err'], fmt='o',alpha=0.5, capsize=3,label=f'{ds}')
+        plt.errorbar(df_ds[xcol], df_ds['rosenbluth_xsec'], yerr=df_ds['rosenbluth_xsec_err'], fmt='o',alpha=0.5, capsize=3,label=f'{ds}:{DATASETS[ds]}')
         for index, row in df_ds.iterrows():
             row_nu = row['nu']
-            plt.text(row['epsilon'], row['rosenbluth_xsec'], f'{ds}:nu={round(row_nu,3)}')
+            row_E0 = row['E0']
+            row_w2 = row['W2']
+            row_qv = row['qv']
+            row_bc = row['bc_qv_w2']
+            row_theta = row['ThetaDeg']
+            plt.text(row[xcol], row['rosenbluth_xsec'], f'{ds}:'
+                     +f'$\\nu$={round(row_nu,3)},$E_0$={round(row_E0,4)},'
+                     + f'$\\theta$={round(row_theta,3)},$W^2$={round(row_w2,4)},'
+                     + f'$q$={round(row_qv,4)},bc={round(row_bc, 3)}'
+                     , fontsize=3
+                     )
 
     xs = np.linspace(0,1,10)
     ys = linear_model(xs, a=a_opt, b=b_opt)
     plt.plot(xs, ys, label=f'y = {round(a_opt, 3)} * x + {round(b_opt, 3)}', alpha=0.7, linestyle='--')
-    plt.xlabel('epsilon')
+    plt.xlabel(xcol)
     plt.ylabel('rosenbluth xsec')
-    plt.title(f'qvc={qvcenter}, nuc={round(nuc,6)}, W2c={round(w2center,3)}, chi2/ndf={round(chi2_ndf,3)}')
+    plt.title(f'qvc={qvcenter}, nuc={round(nuc,6)}, W2c={round(w2center,3)}, chi2/ndf={round(chi2_ndf,3)}, $\Delta\epsilon$={round(df[xcol].max()-df[xcol].min(),3)}')
     plt.legend()
     plt.show()
 
@@ -631,12 +642,19 @@ def extract_response_qvbin_w2center(df : pd.DataFrame, qvcenter : float = 0.01, 
         qvc2 = qvcenter**2
         q2center = qvc2-nuc**2
         exc = nuc - q2center/(2*mass_nucleus)
-        x = np.array(df_w2bin["epsilon"])
+        # x = np.array(df_w2bin["epsilon"])
+        xcol = "epcenter_w2_qv" if bin_centering else "epsilon"
+        x = df_w2bin[xcol].to_numpy()
+        
         y = np.array(df_w2bin["rosenbluth_xsec"])
         yerr = np.array(df_w2bin["rosenbluth_xsec_err"])
 
         if (len(y)>2) and ((np.max(x)-np.min(x)) >= min_epsilon_range):
-            params, covariance = curve_fit(linear_model, x, y, sigma = yerr, absolute_sigma = absolute_sigma)
+            if absolute_sigma == True:
+                params, covariance = curve_fit(linear_model, x, y, sigma = yerr, absolute_sigma = absolute_sigma)
+            else:
+                params, covariance = curve_fit(linear_model, x, y, absolute_sigma=False)
+
             a_opt, b_opt = params
             a_err, b_err = np.sqrt(np.diag(covariance))            
             chi2 = np.sum(np.square((y - linear_model(x,a_opt,b_opt)) / yerr))
@@ -647,9 +665,10 @@ def extract_response_qvbin_w2center(df : pd.DataFrame, qvcenter : float = 0.01, 
             rterr = (2 * b_err * q2center / qvc2)
             df_rlrt.append({'qvcenter':qvcenter,'nu':nuc,'w2':w2center,'ex':exc,'rl':rl,'rlerr':rlerr,'rt':rt,'rterr':rterr,'chi2':chi2,
                     'num_points':len(y)})             
-            if _plot_rosenbluth:
+            if _plot_rosenbluth and nuc >= 0.3:
                 _plot_rosenbluth_xsec_epsilon(df_w2bin, qvcenter, a_opt, b_opt, chi2/(len(y)-2), nuc, w2center)
-
+        else:
+            print(f'qv={qvcenter} nuc={round(nuc,4)} skip {len(x)} points from', df_w2bin['dataSet'].unique())
 
     df_rlrt = pd.DataFrame(df_rlrt)
     if _plot_rosenbluth_combined:
