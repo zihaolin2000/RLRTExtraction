@@ -288,6 +288,16 @@ def plot_response_qvbin(df_this_analysis : pd.DataFrame, qvcenters : list[float]
         axs[i, 1].set_xlim(0, qvcenter*1.05)
         axs[i, 1].set_ylim(0, RLRT_QVPLOT_HEIGHTS[qvcenter][1])
 
+        # # plot at a ylim that covers rl, also put a text showing nu location
+        # df_qvbin = df_this_analysis.loc[df_this_analysis['qvcenter'] == qvcenter]
+        # y_range = df_qvbin['rl'].max()-df_qvbin['rl'].min()
+        # axs[i, 0].set_ylim(df_qvbin['rl'].min()-y_range*0.05, df_qvbin['rl'].max()+y_range*0.05)
+        # for index, row in df_qvbin.iterrows():
+        #     row_nu = row['nu']
+        #     axs[i, 0].text(row['nu'], row['rl'], f'nu={round(row_nu,3)}', fontsize=3)
+        # y_range = df_qvbin['rt'].max()-df_qvbin['rt'].min()
+        # axs[i, 1].set_ylim(df_qvbin['rt'].min()-y_range*0.05, df_qvbin['rt'].max()+y_range*0.05)
+
          # put inset plot at top left corner
         if qvcenter >= 1.619:
             ax_inset0 = inset_axes(axs[i, 0], width="45%", height="50%", loc='upper left')
