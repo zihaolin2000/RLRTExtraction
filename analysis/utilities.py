@@ -109,12 +109,15 @@ def ratio_interpolated(x1, y1, x2, y2, eps=0.0, shrink=0.98):
     return r, x_grid
 
 def evaluate_norm_error(xs : ArrayLike, xs_err : ArrayLike, model : ArrayLike):
+    xs = np.array(xs)
+    xs_err = np.array(xs_err)
+    model = np.array(model)
     ratio = model / xs
     ratio_err = ratio * np.sqrt(xs_err**2 / xs**2)
     ratio_weight = 1/ratio_err**2
     norm = np.sum(ratio * ratio_weight)/np.sum(ratio_weight)
     norm_err = np.sqrt(1/np.sum(ratio_weight))
-    print(ratio)
-    print('avg:',np.average(ratio, weights=ratio_weight))
+    print('avg ratio:',np.average(ratio, weights=ratio_weight))
+    print(norm, norm_err)
     return norm, norm_err
 
