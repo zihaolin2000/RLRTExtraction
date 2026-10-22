@@ -542,12 +542,13 @@ def extract_response_q2bin_w2center(df : pd.DataFrame, q2center : float = 0.01, 
         df_q2bin['rosenbluth_xsec_err']=df_q2bin['Hcc_error(GeV)']
     
     df_rlrt = []
+    xcol = "epcenter_w2_q2" if bin_centering else "epsilon"
     for w2center in np.sort(df_q2bin['W2center_q2'].unique()):
         df_w2bin = df_q2bin.loc[(df_q2bin['W2center_q2']==w2center)]
         nuc = (w2center - MASS_NUCLEON**2 + q2center)/(2 * MASS_NUCLEON)
         qvc2 = (q2center + nuc**2)
         exc = nuc - q2center/(2 * mass_nucleus)
-        x = np.array(df_w2bin["epsilon"])        
+        x = df_w2bin[xcol].to_numpy()      
         y = np.array(df_w2bin["rosenbluth_xsec"])
         yerr = np.array(df_w2bin["rosenbluth_xsec_err"])
 
@@ -583,12 +584,13 @@ def extract_response_q2bin_excenter(df : pd.DataFrame, q2center : float = 0.01, 
         df_q2bin['rosenbluth_xsec_err']=df_q2bin['Hcc_error(GeV)']
 
     df_rlrt = []
+    xcol = "epcenter_ex_q2" if bin_centering else "epsilon"
     for excenter in np.sort(df_q2bin['Excenter_q2'].unique()):
         df_exbin = df_q2bin.loc[(df_q2bin['Excenter_q2'] == excenter)]
         nuc = excenter + q2center/(2*mass_nucleus)
         qvc2 = (q2center+nuc**2)
         w2c = MASS_NUCLEON**2 + 2 * MASS_NUCLEON * nuc - q2center
-        x = np.array(df_exbin["epsilon"])        
+        x = df_exbin[xcol].to_numpy()
         y = np.array(df_exbin["rosenbluth_xsec"])
         yerr = np.array(df_exbin["rosenbluth_xsec_err"])
 
@@ -636,20 +638,18 @@ def extract_response_qvbin_w2center(df : pd.DataFrame, qvcenter : float = 0.01, 
         df_qvbin['rosenbluth_xsec_err']=df_qvbin['Hcc_error(GeV)']
 
     df_rlrt = []
+    xcol = "epcenter_w2_qv" if bin_centering else "epsilon"
     for w2center in np.sort(df_qvbin['W2center_qv'].unique()):
         df_w2bin = df_qvbin.loc[(df_qvbin['W2center_qv']==w2center)]
         nuc = np.sqrt(qvcenter**2+w2center)-MASS_NUCLEON
         qvc2 = qvcenter**2
         q2center = qvc2-nuc**2
         exc = nuc - q2center/(2*mass_nucleus)
-        # x = np.array(df_w2bin["epsilon"])
-        xcol = "epcenter_w2_qv" if bin_centering else "epsilon"
-        x = df_w2bin[xcol].to_numpy()
-        
+        x = df_w2bin[xcol].to_numpy()        
         y = np.array(df_w2bin["rosenbluth_xsec"])
         yerr = np.array(df_w2bin["rosenbluth_xsec_err"])
 
-        if (len(y)>2) and ((np.max(x)-np.min(x)) >= min_epsilon_range):
+        if (len(y)>2) and ((np.max(x)-np.min(x)) >= (0.1 if qvcenter==0.756 else min_epsilon_range)):
             if absolute_sigma == True:
                 params, covariance = curve_fit(linear_model, x, y, sigma = yerr, absolute_sigma = absolute_sigma)
             else:
@@ -691,13 +691,14 @@ def extract_response_qvbin_excenter(df : pd.DataFrame, qvcenter : float = 0.01, 
         df_qvbin['rosenbluth_xsec_err']=df_qvbin['Hcc_error(GeV)']
 
     df_rlrt = []
+    xcol = "epcenter_ex_qv" if bin_centering else "epsilon"
     for excenter in df_qvbin['Excenter_qv'].unique():
         df_exbin = df_qvbin.loc[(df_qvbin['Excenter_qv']==excenter)]
         nuc = np.sqrt(mass_nucleus**2+qvcenter**2+2*mass_nucleus*excenter)-mass_nucleus
         qvc2 = qvcenter**2
         q2center = qvc2 - nuc**2
         w2c = MASS_NUCLEON**2 + 2 * MASS_NUCLEON * nuc - q2center
-        x = np.array(df_exbin["epsilon"])
+        x = df_exbin[xcol].to_numpy()
         y = np.array(df_exbin["rosenbluth_xsec"])
         yerr = np.array(df_exbin["rosenbluth_xsec_err"])
 
