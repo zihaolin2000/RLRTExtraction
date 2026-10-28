@@ -747,15 +747,14 @@ def mec2021(z: float, a: float, w2: float, q2: float, xvalm: Sequence[float]) ->
     mp2 = mp * mp
 
     f1mec = 0.0
-    # # original Fortran code has w2 > 0 cut for mec; note that w, qv2 are not used later. 
-    # # comment out to avoid mec sharp drop: 
-    # if w2 <= 0.0:
-    #     return 0.0
-    # w = math.sqrt(w2)
+    if w2 <= 0.0:
+        return 0.0
+
+    w = math.sqrt(w2)
     nu = (w2 - mp2 + q2) / (2.0 * mp)
     x = q2 / (2.0 * mp * nu)
-    # qv2 = q2 + nu**2
-    # _ = w, qv2
+    qv2 = q2 + nu**2
+    _ = w, qv2
     numin = 0.0165
     w2min = mp2 + 2.0 * mp * numin - q2
     xmax = q2 / (2.0 * mp * numin)
@@ -974,8 +973,8 @@ def nuc12sf(z: float, a: float, nu: float, q2p: float, state: int) -> Tuple[floa
 
     q2 = max(q2p, 0.0)
     qv2 = q2 + nu * nu
-    smwid = 0.0035 # use this for bin-centering
-    # smwid = 0.001 # use this for RL RT plotting
+    # smwid = 0.0035
+    smwid = 0.001
     width = math.sqrt(smwid * smwid + wid[state] * wid[state])
     norm = width * math.sqrt(pi)
 
