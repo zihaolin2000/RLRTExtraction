@@ -9,10 +9,8 @@ from .christy_bodek_fit import calculate_response_table
 # For development: make individual rosenbluth seperation plot
 _plot_rosenbluth = False
 # _plot_rosenbluth = True
-_plot_rosenbluth_combined = False
-# _plot_rosenbluth_combined = True
 
-def _plot_rosenbluth_xsec_epsilon(df, qvcenter, a_opt, b_opt, chi2_ndf, nuc, w2center, bin_centering = True):
+def _plot_rosenbluth_xsec_epsilon_qv_w2(df, qvcenter, a_opt, b_opt, chi2_ndf, nuc, w2center, bin_centering = True):
     plt.figure(figsize=(10,10), dpi=300)
     xcol = "epcenter_w2_qv" if bin_centering else "epsilon"
     for ds in df['dataSet'].unique():
@@ -41,93 +39,34 @@ def _plot_rosenbluth_xsec_epsilon(df, qvcenter, a_opt, b_opt, chi2_ndf, nuc, w2c
     plt.legend()
     plt.show()
 
-def _plot_rosenbluth_xsec_epsilon_combined(df, qvcenter, df_rlrt):
-    df_qvbin = df.copy()
-    df_qvbin = df_qvbin.sort_values(by='epsilon')
+def _plot_rosenbluth_xsec_epsilon_q2_w2(df, q2center, a_opt, b_opt, chi2_ndf, nuc, w2center, bin_centering = True):
+    plt.figure(figsize=(10,10), dpi=300)
+    xcol = "epcenter_w2_q2" if bin_centering else "epsilon"
+    for ds in df['dataSet'].unique():
+        df_ds = df.loc[df['dataSet'] == ds]
+        plt.errorbar(df_ds[xcol], df_ds['rosenbluth_xsec'], yerr=df_ds['rosenbluth_xsec_err'], fmt='o',alpha=0.5, capsize=3,label=f'{ds}:{DATASETS[ds]}')
+        for index, row in df_ds.iterrows():
+            row_nu = row['nu']
+            row_E0 = row['E0']
+            row_w2 = row['W2']
+            row_q2 = row['Q2']
+            row_bc = row['bc_q2_w2']
+            row_theta = row['ThetaDeg']
+            plt.text(row[xcol], row['rosenbluth_xsec'], f'{ds}:'
+                     +f'$\\nu$={round(row_nu,3)},$E_0$={round(row_E0,4)},'
+                     + f'$\\theta$={round(row_theta,3)},$W^2$={round(row_w2,4)},'
+                     + f'$Q2$={round(row_q2,4)},bc={round(row_bc, 3)}'
+                     , fontsize=3
+                     )
 
-    plt.figure(figsize=(40,30), dpi=150)
-    for w2center in np.sort(df_qvbin['W2center_qv'].unique()):
-        nuc = np.sqrt(qvcenter**2+w2center)-MASS_NUCLEON
-        if nuc in df_rlrt['nu'].unique() and nuc>0.35:
-            qvc2 = qvcenter**2
-            q2center = qvc2-nuc**2
-            df_result = df_rlrt.loc[df_rlrt['nu']==nuc]
-            rl = df_result['rl'].iloc[0]
-            rt = df_result['rt'].iloc[0]
-            a_opt = rl
-            b_opt = rt*qvc2 / (2*q2center)
-            df_points = df_qvbin.loc[(df_qvbin['W2center_qv']==w2center)]
-            plt.errorbar(df_points['epsilon'], df_points['rosenbluth_xsec'], yerr=df_points['rosenbluth_xsec_err'], 
-                fmt='o', alpha=0.5)
-            # plt.errorbar(df_points['epsilon'], df_points['Hcc_Sig(GeV)'], yerr=df_points['Hcc_error(GeV)'], 
-            #     capsize=3, alpha=0.5)
-            # plt.scatter(df_points['epsilon'], df_points['rosenbluth_xsec'],alpha=0.5)
-            xs = np.linspace(0,1,10)
-            ys = linear_model(xs, a=a_opt, b=b_opt)
-            plt.plot(xs, ys, label=f'y = {round(a_opt, 3)} * x + {round(b_opt, 3)}', alpha=0.7, linestyle='--')
-            plt.text(xs[0]-0.1, ys[0], f'y = {round(a_opt, 3)} * x + {round(b_opt, 3)}, nuc={round(nuc,6)}')
-            for index, row in df_points.iterrows():
-                row_ds = row['dataSet']
-                row_qv = row['qv']
-                row_nu = row['nu']
-                row_bc = row['bc_qv_w2']
-                # plt.text(df_ds['epsilon']+0.01, df_ds['rosenbluth_xsec']-0.01, f'{ds}:nu={round(row_nu,3)}',alpha=0.7)
-                plt.text(row['epsilon'], 
-                        # row['rosenbluth_xsec'],
-                        row['Hcc_Sig(GeV)'],
-                        # f'{row_ds}:nu={round(row_nu,6)}'
-                        f'{row_ds}:nu={round(row_nu,6)},    q={round(row_qv,4)}, bc={round(row_bc,3)}'
-                    )
-    plt.xlabel('epsilon')
+    xs = np.linspace(0,1,10)
+    ys = linear_model(xs, a=a_opt, b=b_opt)
+    plt.plot(xs, ys, label=f'y = {round(a_opt, 3)} * x + {round(b_opt, 3)}', alpha=0.7, linestyle='--')
+    plt.xlabel(xcol)
     plt.ylabel('rosenbluth xsec')
-
-def _plot_rosenbluth_xsec_epsilon_combined_q2_ex(df, q2center, df_rlrt):
-    df_q2bin = df.copy()
-    df_q2bin = df_q2bin.sort_values(by='epsilon')
-
-    plt.figure(figsize=(40,30), dpi=150)
-    for Excenter in np.sort(df_q2bin['Excenter_q2'].unique()):
-        # nuc = np.sqrt(qvcenter**2+w2center)-MASS_NUCLEON
-        nuel = q2center/(2*MASS_C12)
-        nuc = Excenter + nuel
-        # if nuc in df_rlrt['nu'].unique() and nuc>0.35:
-        if nuc in df_rlrt['nu'].unique():
-            # qvc2 = qvcenter**2
-            # q2center = qvc2-nuc**2
-            # q2center = qv**2 - nuc**2
-            qvc2 = q2center + nuc**2
-            df_result = df_rlrt.loc[df_rlrt['nu']==nuc]
-            rl = df_result['rl'].iloc[0]
-            rt = df_result['rt'].iloc[0]
-            a_opt = rl
-            b_opt = rt*qvc2 / (2*q2center)
-            df_points = df_q2bin.loc[(df_q2bin['Excenter_q2']==Excenter)]
-            plt.errorbar(df_points['epsilon'], df_points['rosenbluth_xsec'], yerr=df_points['rosenbluth_xsec_err'], 
-                fmt='o', alpha=0.5)
-            plt.errorbar(df_points['epsilon'], df_points['Hcc_Sig(GeV)'], yerr=df_points['Hcc_error(GeV)'], 
-                capsize=3, alpha=0.5)
-            # plt.scatter(df_points['epsilon'], df_points['rosenbluth_xsec'],alpha=0.5)
-            xs = np.linspace(0,1,10)
-            ys = linear_model(xs, a=a_opt, b=b_opt)
-            plt.plot(xs, ys, label=f'y = {round(a_opt, 3)} * x + {round(b_opt, 3)}', alpha=0.7, linestyle='--')
-            plt.text(xs[0]-0.1, ys[0], f'y = {round(a_opt, 3)} * x + {round(b_opt, 3)}, nuc={round(nuc,6)}')
-            for index, row in df_points.iterrows():
-                row_ds = row['dataSet']
-                # row_qv = row['qv']
-                row_q2 = row['q2']
-                row_nu = row['nu']
-                # row_bc = row['bc_qv_w2']
-                row_bc = row['bc_q2_ex']
-
-                # plt.text(df_ds['epsilon']+0.01, df_ds['rosenbluth_xsec']-0.01, f'{ds}:nu={round(row_nu,3)}',alpha=0.7)
-                plt.text(row['epsilon'], 
-                        # row['rosenbluth_xsec'],
-                        row['Hcc_Sig(GeV)'],
-                        # f'{row_ds}:nu={round(row_nu,6)}'
-                        f'{row_ds}:nu={round(row_nu,6)},    q2={round(row_q2,4)}, bc={round(row_bc,3)}'
-                    )
-    plt.xlabel('epsilon')
-    plt.xlabel('rosenbluth xsec')
+    plt.title(f'q2c={q2center}, nuc={round(nuc,6)}, W2c={round(w2center,3)}, chi2/ndf={round(chi2_ndf,3)}, $\Delta\epsilon$={round(df[xcol].max()-df[xcol].min(),3)}')
+    plt.legend()
+    plt.show()
 
 def prepare_dataframe(df_data : pd.DataFrame, vcoul : float = 0.0031, syst_err : bool = False, mass_nucleus : float = MASS_C12) -> pd.DataFrame:
     """
@@ -195,7 +134,8 @@ def prepare_dataframe(df_data : pd.DataFrame, vcoul : float = 0.0031, syst_err :
     df["sin2(T/2)"]=(np.sin(df["ThetaRad"]/2))**2
     df["cos2(T/2)"]=(np.cos(df["ThetaRad"]/2))**2
     df["tan2(T/2)"]=(np.tan(df["ThetaRad"]/2))**2
-    df["Ex"] = df["nu"] - (df["E0"]-df["E0"]/(1+2*df["E0"]*df["sin2(T/2)"] / mass_nucleus))
+    # stop using this Ex formula
+    # df["Ex"] = df["nu"] - (df["E0"]-df["E0"]/(1+2*df["E0"]*df["sin2(T/2)"] / mass_nucleus))
     df['Veff'] = vcoul
     df["Ffoc2"]=((df["E0"]+df["Veff"])/df["E0"])**2
     df["E0original"]=df["E0"]
@@ -204,6 +144,9 @@ def prepare_dataframe(df_data : pd.DataFrame, vcoul : float = 0.0031, syst_err :
     df["E0"]=df["E0"]+df["Veff"]
     df["Ep"]=df["Ep"]+df["Veff"]
     df["Q2"]=4*df["E0"]*(df["Ep"])*df["sin2(T/2)"]
+    # use the following Ex formula, same as CB fit implementation; already Veff corrected
+    df["nuel"] = df["Q2"] / (2 * mass_nucleus)
+    df["Ex"] = df["nu"] - df["nuel"]
     df["qv2"]=df["nu"]**2+df["Q2"]
     df["qv"]=np.sqrt(df["qv2"])
     df["W2"] = MASS_NUCLEON**2 + 2 * MASS_NUCLEON * df["nu"] - df["Q2"]
@@ -220,9 +163,6 @@ def prepare_dataframe(df_data : pd.DataFrame, vcoul : float = 0.0031, syst_err :
     df["Hcc_error(nb)"]=df["Hcc"]*df["normCrossError"]
     df["Hcc_Sig(GeV)"]=df["Hcc_Sig(nb)"]/((0.1973269**2)*10000000)
     df["Hcc_error(GeV)"]=df["Hcc_error(nb)"]/((0.1973269**2)*10000000)
-
-    # # RT quasi deuteron added 2025 July 18
-    # df["RT_QD_data"] = rt_quasi_deuteron(nus=df['nu'],q2s = df['Q2'],exs = df['Ex'])
 
     # split into qv, q2 bins:
     df['qvbin'] = 0.0
@@ -300,7 +240,7 @@ def prepare_dataframe(df_data : pd.DataFrame, vcoul : float = 0.0031, syst_err :
         # for qvcenter = 0.1, only extract at Ex center, so skip 
         if qvcenter > 0.1:
             nuedges = np.array(QVCENTER_NUBINEDGES[qvcenter])
-            if qvcenter in [0.3, 0.38, 0.57]: # use nu bin center, so to overlap with Barreau and Jordan's point
+            if qvcenter in [0.3, 0.38, 0.475, 0.57]: # use nu bin center, so to overlap with Barreau and Jordan's point
                 nucenters = (nuedges[:-1] + nuedges[1:]) / 2
                 df.loc[mask, 'W2bin_qv'] = pd.cut(df.loc[mask, 'nu'], bins=nuedges, labels=False, include_lowest=True)        
                 df.loc[mask, 'nucenter_w2_qv'] = df.loc[mask, 'W2bin_qv'].map(lambda i: nucenters[int(i)] if pd.notnull(i) else np.nan)
@@ -529,7 +469,7 @@ def calculate_bc_qv_w2(df_xsec : pd.DataFrame, mass_nucleus : float = MASS_C12, 
     return df
 
 def extract_response_q2bin_w2center(df : pd.DataFrame, q2center : float = 0.01, bin_centering : bool = True,
-        absolute_sigma : bool = True, min_epsilon_range : int = 0.3, mass_nucleus : float = MASS_C12) -> pd.DataFrame:
+        absolute_sigma : bool = True, min_epsilon_range : float = 0.28, mass_nucleus : float = MASS_C12) -> pd.DataFrame:
     if q2center == 0.01:
         df_q2bin = df.loc[(df['Q2center']==q2center) & (df['Ex'] >= EX_CUT_LOWQ)].copy()
     else:
@@ -565,9 +505,14 @@ def extract_response_q2bin_w2center(df : pd.DataFrame, q2center : float = 0.01, 
             df_rlrt.append({'q2center':q2center, 'nu':nuc, 'w2':w2center, 'ex':exc, 'rl':rl, 'rlerr':rlerr, 'rt':rt,
                 'rterr':rterr, 'chi2':chi2, 'num_points':len(y)})
 
+            if _plot_rosenbluth and nuc > 0.3:
+                _plot_rosenbluth_xsec_epsilon_q2_w2(df_w2bin, q2center, a_opt, b_opt, chi2/(len(y)-2), nuc, w2center)
+        else:
+            print(f'q2={q2center} nuc={round(nuc,4)} skip {len(x)} points from', df_w2bin['dataSet'].unique())
+
     df_rlrt = pd.DataFrame(df_rlrt)
-    # if q2center in [0.02,0.026]:
-    #     df_rlrt = df_rlrt.loc[df_rlrt['nu']<0.35]
+    if q2center in [0.02,0.026]:
+        df_rlrt = df_rlrt.loc[df_rlrt['nu']<0.35]
     return df_rlrt
 
 def extract_response_q2bin_excenter(df : pd.DataFrame, q2center : float = 0.01, bin_centering : bool = True, 
@@ -606,26 +551,11 @@ def extract_response_q2bin_excenter(df : pd.DataFrame, q2center : float = 0.01, 
             rterr = (2*b_err*q2center/qvc2)
             df_rlrt.append({'q2center':q2center,'nu':nuc,'w2':w2c,'ex':excenter,'rl':rl,'rlerr':rlerr,'rt':rt,'rterr':rterr,'chi2':chi2,
                     'num_points':len(y)})
-            if q2center == 0.01 and _plot_rosenbluth:
-                plt.figure(figsize=(7,4), dpi=150)
-                for ds in df_exbin['dataSet'].unique():
-                    df_ds = df_exbin.loc[df_exbin['dataSet']==ds]
-                    colors={1:'deepskyblue', 18:'violet', 22:'limegreen', 23:'darkorange'}
-                    # plt.errorbar(df_ds['epsilon'], df_ds['rosenbluth_xsec'],fmt='.', yerr=df_ds['rosenbluth_xsec_err'], label=f'{ds}:{DATASETS[ds]}')
-                    for id, row in df_ds.iterrows():
-                        bc = round(row['bc_q2_ex'], 3)
-                        plt.errorbar(row['epsilon'], row['rosenbluth_xsec'],fmt='.', yerr=row['rosenbluth_xsec_err'], label=f'{ds}: bc={bc}',  color=colors[ds])
-
-                        # plt.errorbar(row['epsilon'], row['rosenbluth_xsec'],fmt='.', yerr=row['rosenbluth_xsec_err'], label=f'{ds}: bc={}', color=colors[ds])
-                plt.plot(np.linspace(0,1,10), linear_model(np.linspace(0,1,10), a_opt, b_opt), label=f'y = {round(a_opt, 3)} * x + {round(b_opt,3)}')
-                plt.title(f'nu={round(nuc,3)}, RL={round(rl,3)}, RLerr={round(rlerr,3)}, RT={round(rt,3)}, RTerr={round(rterr,3)}')
-                plt.legend()
-                plt.show()
     df_rlrt = pd.DataFrame(df_rlrt)
     return df_rlrt
     
 def extract_response_qvbin_w2center(df : pd.DataFrame, qvcenter : float = 0.01, bin_centering : bool = True,
-        absolute_sigma : bool = True, min_epsilon_range : float = 0.3, mass_nucleus : float = MASS_C12) -> pd.DataFrame:
+        absolute_sigma : bool = True, min_epsilon_range : float = 0.28, mass_nucleus : float = MASS_C12) -> pd.DataFrame:
     if qvcenter <= 0.1:
         df_qvbin = df.loc[(df['qvcenter']==qvcenter) & (df['Ex']>=EX_CUT_LOWQ)].copy()
     else:
@@ -649,7 +579,8 @@ def extract_response_qvbin_w2center(df : pd.DataFrame, qvcenter : float = 0.01, 
         y = np.array(df_w2bin["rosenbluth_xsec"])
         yerr = np.array(df_w2bin["rosenbluth_xsec_err"])
 
-        if (len(y)>2) and ((np.max(x)-np.min(x)) >= (0.1 if qvcenter==0.756 else min_epsilon_range)):
+        # if (len(y)>2) and ((np.max(x)-np.min(x)) >= (0.1 if qvcenter==0.756 else min_epsilon_range)):
+        if (len(y)>2) and ((np.max(x)-np.min(x)) >= min_epsilon_range):
             if absolute_sigma == True:
                 params, covariance = curve_fit(linear_model, x, y, sigma = yerr, absolute_sigma = absolute_sigma)
             else:
@@ -666,14 +597,11 @@ def extract_response_qvbin_w2center(df : pd.DataFrame, qvcenter : float = 0.01, 
             df_rlrt.append({'qvcenter':qvcenter,'nu':nuc,'w2':w2center,'ex':exc,'rl':rl,'rlerr':rlerr,'rt':rt,'rterr':rterr,'chi2':chi2,
                     'num_points':len(y)})             
             if _plot_rosenbluth and nuc >= 0.3:
-                _plot_rosenbluth_xsec_epsilon(df_w2bin, qvcenter, a_opt, b_opt, chi2/(len(y)-2), nuc, w2center)
+                _plot_rosenbluth_xsec_epsilon_qv_w2(df_w2bin, qvcenter, a_opt, b_opt, chi2/(len(y)-2), nuc, w2center)
         else:
             print(f'qv={qvcenter} nuc={round(nuc,4)} skip {len(x)} points from', df_w2bin['dataSet'].unique())
 
     df_rlrt = pd.DataFrame(df_rlrt)
-    if _plot_rosenbluth_combined:
-        _plot_rosenbluth_xsec_epsilon_combined(df_qvbin, qvcenter, df_rlrt)
-
 
     return df_rlrt
 
