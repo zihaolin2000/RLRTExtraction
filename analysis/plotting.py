@@ -280,7 +280,13 @@ def plot_response_qvbin(df_this_analysis : pd.DataFrame, qvcenters : list[float]
         axs[i, 0].minorticks_on()
         axs[i, 0].set_ylabel(r'$R_L$ (GeV$^{-1}$)')
         axs[i, 0].set_xlim(0, qvcenter*1.05)
-        axs[i, 0].set_ylim(0, RLRT_QVPLOT_HEIGHTS[qvcenter][0])
+        # set RL y lower lim to contain negative points:
+        df_qvbin = df_this_analysis.loc[df_this_analysis['qvcenter'] == qvcenter]
+        df_qvbin = df_qvbin.loc[df_qvbin['nu']>=0.03]
+        axs[i, 0].set_ylim(
+            0 if df_qvbin['rl'].min()>=0 else df_qvbin['rl'].min() - 0.05*(df_qvbin['rl'].max()-df_qvbin['rl'].min()), 
+            RLRT_QVPLOT_HEIGHTS[qvcenter][0])
+
         axs[i, 1].text(0.95, 0.95,'$R_T$ ($|\mathbf{q}|$ = '+f'{qvcenter} GeV/c)',transform=axs[i, 1].transAxes,ha='right',va='top',color='gray')
         axs[i, 1].tick_params(which='both', direction='in', top=True, right=True)
         axs[i, 1].minorticks_on()
@@ -492,10 +498,13 @@ def plot_response_q2bin(df_this_analysis : pd.DataFrame, q2centers : list[float]
         axs[i, 0].tick_params(which='both', direction='in', top=True, right=True)
         axs[i, 0].minorticks_on()
         axs[i, 0].set_ylabel(r'$R_L$ (GeV$^{-1}$)')
-        if q2center == 0.093:
-            axs[i, 0].set_ylim(-10, RLRT_Q2PLOT_HEIGHTS[q2center][0])
-        else:
-            axs[i, 0].set_ylim(0, RLRT_Q2PLOT_HEIGHTS[q2center][0])
+        # set RL y lower lim to contain negative points:
+        df_q2bin = df_this_analysis.loc[df_this_analysis['q2center'] == q2center]
+        df_q2bin = df_q2bin.loc[df_q2bin['nu']>=0.03]
+        axs[i, 0].set_ylim(
+            0 if df_q2bin['rl'].min()>=0 else df_q2bin['rl'].min() - 0.05*(df_q2bin['rl'].max()-df_q2bin['rl'].min()), 
+            RLRT_Q2PLOT_HEIGHTS[q2center][0])
+
         axs[i, 1].text(0.95, 0.95,'$R_T$ ($Q^2$ = '+f'{q2center} GeV$^2$/c$^2$)',transform=axs[i, 1].transAxes,ha='right',va='top',color='gray')
         axs[i, 1].tick_params(which='both', direction='in', top=True, right=True)
         axs[i, 1].minorticks_on()
