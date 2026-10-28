@@ -1419,8 +1419,8 @@ def nuccs12cs(z: float, a: float, beam_energy: float, scattered_energy: float,
     if not (1 <= state <= 22):
         return 0.0
 
-    # smearing_width = 0.00048
-    smearing_width = 0.002 # use this for paper supp. material ploting xsec - Oct 14 2026
+    smearing_width = 0.00048 # fine resolution. Will see Yamaguchi peaks. Stay with this value.
+    # smearing_width = 0.002 # coarse resolution. arXiv v3 uses this for paper supp. material xsec plotting.
 
     total_width = math.sqrt(smearing_width * smearing_width + state_width[state - 1] * state_width[state - 1])
     normalization = total_width * math.sqrt(pi)
