@@ -121,3 +121,14 @@ def evaluate_norm_error(xs : ArrayLike, xs_err : ArrayLike, model : ArrayLike):
     print(norm, norm_err)
     return norm, norm_err
 
+def quantiles_binning(data, n_bins=10):
+    x = np.asarray(data)
+    x = x[np.isfinite(x)]  # remove NaN and infinities
+    bin_edges = np.unique(
+        np.quantile(x, np.linspace(0, 1, n_bins + 1))
+    )
+    bin_edges = np.round(bin_edges, decimals=5)
+    counts, _ = np.histogram(x, bins=bin_edges)
+    print("Bin edges:", bin_edges)
+    print("Counts:", counts)
+    return bin_edges
