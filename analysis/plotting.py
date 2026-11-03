@@ -74,12 +74,12 @@ RLRT_QVPLOT_HEIGHTS = {
     0.38:[30.0,35],
     0.475:[17.5,45],
     0.57:[10.0,35],
-    0.649:[10.0,40],
-    0.756:[10.0,42],
-    0.991:[10.0,25],
-    1.619:[100.0,45],
-    1.921:[120.0,35],
-    2.213:[80.0,35],
+    0.649:[10.0,32],
+    0.756:[6.0,35],
+    0.991:[10.0,40],
+    1.619:[65.0,45],
+    1.921:[120.0,50],
+    2.213:[80.0,60],
     2.5:[50.0,26],
     2.783:[40.0,15],
     3.5:[12.5,12]
@@ -283,9 +283,12 @@ def plot_response_qvbin(df_this_analysis : pd.DataFrame, qvcenters : list[float]
         # set RL y lower lim to contain negative points:
         df_qvbin = df_this_analysis.loc[df_this_analysis['qvcenter'] == qvcenter]
         df_qvbin = df_qvbin.loc[df_qvbin['nu']>=0.03]
-        axs[i, 0].set_ylim(
-            0 if df_qvbin['rl'].min()>=0 else df_qvbin['rl'].min() - 0.05*(df_qvbin['rl'].max()-df_qvbin['rl'].min()), 
-            RLRT_QVPLOT_HEIGHTS[qvcenter][0])
+        if qvcenter < 0.991:
+            axs[i, 0].set_ylim(
+                0 if df_qvbin['rl'].min()>=0 else df_qvbin['rl'].min() - 0.05*(df_qvbin['rl'].max()-df_qvbin['rl'].min()), 
+                RLRT_QVPLOT_HEIGHTS[qvcenter][0])
+        elif qvcenter == 0.991:
+            axs[i, 0].set_ylim(0, RLRT_QVPLOT_HEIGHTS[qvcenter][0])
 
         axs[i, 1].text(0.95, 0.95,'$R_T$ ($|\mathbf{q}|$ = '+f'{qvcenter} GeV/c)',transform=axs[i, 1].transAxes,ha='right',va='top',color='gray')
         axs[i, 1].tick_params(which='both', direction='in', top=True, right=True)
@@ -306,23 +309,45 @@ def plot_response_qvbin(df_this_analysis : pd.DataFrame, qvcenters : list[float]
 
          # put inset plot at top left corner
         if qvcenter >= 1.619:
-            ax_inset0 = inset_axes(axs[i, 0], width="45%", height="50%", loc='upper left')
-            ax_inset1 = inset_axes(axs[i, 1], width="45%", height="50%", loc='upper left')
+            ax_inset0 = inset_axes(axs[i, 0], width="55%", height="50%", loc='upper left')
+            ax_inset1 = inset_axes(axs[i, 1], width="55%", height="50%", loc='upper left')
 
             # plot on inset plot
             plot_on_rlrt_subplots(ax_inset0, ax_inset1, qvcenter)
 
             # inset axs styling
+            # ax_inset0.set_xlim(RLRT_QVINSET_XLIMS[qvcenter][0], RLRT_QVINSET_XLIMS[qvcenter][1])
+            # ax_inset0.set_ylim(0, RLRT_QVINSET_HEIGHTS[qvcenter][0])
+            # ax_inset1.set_xlim(RLRT_QVINSET_XLIMS[qvcenter][0], RLRT_QVINSET_XLIMS[qvcenter][1])
+            # ax_inset1.set_ylim(0, RLRT_QVINSET_HEIGHTS[qvcenter][1])
+            nu_lowW = 0.025 - MASS_NUCLEON + np.sqrt(qvcenter**2 + 0.93**2)
+            nu_highW = 0.025 - MASS_NUCLEON + np.sqrt(qvcenter**2 + 1.23**2)
+            nu_rangeW = nu_highW - nu_lowW
+            ax_inset0.set_xlim(nu_lowW - 1.5*nu_rangeW, nu_highW + 1.5*nu_rangeW)
+            ax_inset1.set_xlim(nu_lowW - 1.5*nu_rangeW, nu_highW + 1.5*nu_rangeW)
+            ChristyBodekFit = sheet_CBfit.loc[sheet_CBfit['qv']==qvcenter].copy()
+            ax_inset0.set_ylim(0, ChristyBodekFit['rlqe'].max()*2)
+            ax_inset1.set_ylim(0, ChristyBodekFit['rtqe'].max()*2)
+
             ax_inset0.yaxis.tick_right()
-            ax_inset0.set_xlim(RLRT_QVINSET_XLIMS[qvcenter][0], RLRT_QVINSET_XLIMS[qvcenter][1])
-            ax_inset0.set_ylim(0, RLRT_QVINSET_HEIGHTS[qvcenter][0])
             ax_inset0.tick_params(which='both', direction='in', top=True, right=True)
             ax_inset0.minorticks_on()
             ax_inset1.yaxis.tick_right()
-            ax_inset1.set_xlim(RLRT_QVINSET_XLIMS[qvcenter][0], RLRT_QVINSET_XLIMS[qvcenter][1])
-            ax_inset1.set_ylim(0, RLRT_QVINSET_HEIGHTS[qvcenter][1])
             ax_inset1.tick_params(which='both', direction='in', top=True, right=True)
             ax_inset1.minorticks_on()
+
+            # set master axs range
+            df_qvbin = df_this_analysis.loc[df_this_analysis['qvcenter'] == qvcenter]
+            xrange = df_qvbin['nu'].max() - df_qvbin['nu'].min()
+            axs[i, 0].set_xlim(df_qvbin['nu'].min() - xrange*0.2, qvcenter + xrange*0.06)
+            axs[i, 1].set_xlim(df_qvbin['nu'].min() - xrange*0.2, qvcenter + xrange*0.06)
+            axs[i, 0].set_ylim(0, (df_qvbin['rl']+df_qvbin['rlerr']).max()*1.05)
+
+            df_photon = sheet_exp_rt.loc[(sheet_exp_rt['qv']==qvcenter) & (sheet_exp_rt['experiment']=='Photo-production')]
+            axs[i, 1].set_ylim(0, np.max([
+                df_qvbin['rt'].max()*1.05,
+                df_photon['rt'].max()*1.05
+            ]))
 
     # add x-axis label only to the last subplot
     axs[-1, 0].set_xlabel(r'$\nu$ (GeV)')
@@ -501,9 +526,16 @@ def plot_response_q2bin(df_this_analysis : pd.DataFrame, q2centers : list[float]
         # set RL y lower lim to contain negative points:
         df_q2bin = df_this_analysis.loc[df_this_analysis['q2center'] == q2center]
         df_q2bin = df_q2bin.loc[df_q2bin['nu']>=0.03]
-        axs[i, 0].set_ylim(
-            0 if df_q2bin['rl'].min()>=0 else df_q2bin['rl'].min() - 0.05*(df_q2bin['rl'].max()-df_q2bin['rl'].min()), 
-            RLRT_Q2PLOT_HEIGHTS[q2center][0])
+        if q2center < 0.256:
+            if q2center == 0.093:
+                axs[i,0].set_ylim(-8, RLRT_Q2PLOT_HEIGHTS[q2center][0])
+            else:
+                axs[i, 0].set_ylim(
+                    0 if df_q2bin['rl'].min()>=0 else df_q2bin['rl'].min() - 0.05*(df_q2bin['rl'].max()-df_q2bin['rl'].min()), 
+                    RLRT_Q2PLOT_HEIGHTS[q2center][0])
+        else:
+            axs[i, 0].set_ylim(0, df_q2bin['rl'].max()*1.1)
+
 
         axs[i, 1].text(0.95, 0.95,'$R_T$ ($Q^2$ = '+f'{q2center} GeV$^2$/c$^2$)',transform=axs[i, 1].transAxes,ha='right',va='top',color='gray')
         axs[i, 1].tick_params(which='both', direction='in', top=True, right=True)
@@ -512,12 +544,18 @@ def plot_response_q2bin(df_this_analysis : pd.DataFrame, q2centers : list[float]
         axs[i, 1].set_ylim(0, RLRT_Q2PLOT_HEIGHTS[q2center][1])
 
          # put inset plot at top left corner
+        nu_lowW = 0.025 + (0.93**2 + q2center - MASS_NUCLEON**2)/(2 * MASS_NUCLEON)
+        nu_highW = 0.025 + (1.23**2 + q2center - MASS_NUCLEON**2)/(2 * MASS_NUCLEON)
+        nu_rangeW = nu_highW - nu_lowW
+        ChristyBodekFit = sheet_CBfit.loc[sheet_CBfit['q2']==q2center].copy()
         if q2center >= 0.256:
             ax_inset0 = inset_axes(axs[i, 0], width="45%", height="50%", loc='upper left')
             plot_on_rl_subplots(ax_inset0, q2center)
             ax_inset0.yaxis.tick_right()
-            ax_inset0.set_xlim(RLRT_Q2INSET_XLIMS[q2center][0], RLRT_Q2INSET_XLIMS[q2center][1])
-            ax_inset0.set_ylim(0, RLRT_Q2INSET_HEIGHTS[q2center][0])
+            # ax_inset0.set_xlim(RLRT_Q2INSET_XLIMS[q2center][0], RLRT_Q2INSET_XLIMS[q2center][1])
+            # ax_inset0.set_ylim(0, RLRT_Q2INSET_HEIGHTS[q2center][0])
+            ax_inset0.set_xlim(nu_lowW - nu_rangeW, nu_highW + nu_rangeW)
+            ax_inset0.set_ylim(0, ChristyBodekFit['rlqe'].max()*2)
             ax_inset0.tick_params(which='both', direction='in', top=True, right=True)
             ax_inset0.minorticks_on()
 
@@ -525,10 +563,19 @@ def plot_response_q2bin(df_this_analysis : pd.DataFrame, q2centers : list[float]
             ax_inset1 = inset_axes(axs[i, 1], width="45%", height="50%", loc='upper left')
             plot_on_rt_subplots(ax_inset1, q2center)
             ax_inset1.yaxis.tick_right()
-            ax_inset1.set_xlim(RLRT_Q2INSET_XLIMS[q2center][0], RLRT_Q2INSET_XLIMS[q2center][1])
-            ax_inset1.set_ylim(0, RLRT_Q2INSET_HEIGHTS[q2center][1])
+            # ax_inset1.set_xlim(RLRT_Q2INSET_XLIMS[q2center][0], RLRT_Q2INSET_XLIMS[q2center][1])
+            # ax_inset1.set_ylim(0, RLRT_Q2INSET_HEIGHTS[q2center][1])
+            ax_inset1.set_xlim(nu_lowW - nu_rangeW, nu_highW + nu_rangeW)
+            ax_inset1.set_ylim(0, ChristyBodekFit['rtqe'].max()*2)
             ax_inset1.tick_params(which='both', direction='in', top=True, right=True)
             ax_inset1.minorticks_on()
+
+        if q2center >= 1.25:
+            # df_q2bin = df_this_analysis.loc[df_this_analysis['q2center']==q2center]
+            xrange = df_q2bin['nu'].max() - df_q2bin['nu'].min()
+            axs[i, 0].set_xlim(df_q2bin['nu'].min() - xrange*0.1, df_q2bin['nu'].max() + xrange*0.1)
+            axs[i, 1].set_xlim(df_q2bin['nu'].min() - xrange*0.1, df_q2bin['nu'].max() + xrange*0.1)
+
 
     # add x-axis label only to the last subplot
     axs[-1, 0].set_xlabel(r'$\nu$ (GeV)')
