@@ -212,27 +212,31 @@ def plot_response_qvbin(df_this_analysis : pd.DataFrame, qvcenters : list[float]
         for theory in theory_plot_list:
             if theory.startswith('SuSAv2'):
                 df_rl = sheet_theory_rl.loc[(sheet_theory_rl['qv']==qvcenter) & (sheet_theory_rl['theory']=='SuSAv2')]
-                if theory.endswith('qe'):
-                    ax_rl.plot(df_rl['nu'], df_rl['rlqe'], **LINE_STYLES[theory], label=f'$R_L$, $R_T$ SuSAv2 (QE)')
-                elif theory.endswith('qe+2p2h'):
-                    ax_rl.plot(df_rl['nu'], df_rl['rlqe']+df_rl['rl2p2h'], **LINE_STYLES[theory], label=f'$R_L$, $R_T$ SuSAv2 (QE+2p2h)')
-                elif theory.endswith('total'):
-                    ax_rl.plot(df_rl['nu'], df_rl['rl'], **LINE_STYLES[theory], label=f'$R_L$, $R_T$ SuSAv2 (total)')
+                if len(df_rl) == 0:
+                    if theory.endswith('qe'):
+                        ax_rl.plot(df_rl['nu'], df_rl['rlqe'], **LINE_STYLES[theory], label=f'$R_L$, $R_T$ SuSAv2 (QE)')
+                    elif theory.endswith('qe+2p2h'):
+                        ax_rl.plot(df_rl['nu'], df_rl['rlqe']+df_rl['rl2p2h'], **LINE_STYLES[theory], label=f'$R_L$, $R_T$ SuSAv2 (QE+2p2h)')
+                    elif theory.endswith('total'):
+                        ax_rl.plot(df_rl['nu'], df_rl['rl'], **LINE_STYLES[theory], label=f'$R_L$, $R_T$ SuSAv2 (total)')
             else:
                 df_rl = sheet_theory_rl.loc[(sheet_theory_rl['qv']==qvcenter) & (sheet_theory_rl['theory']==theory)]
-                ax_rl.plot(df_rl['nu'], df_rl['rl'], **LINE_STYLES[theory], label=f'$R_L$, $R_T$ {theory}')
+                if len(df_rl) > 0:
+                    ax_rl.plot(df_rl['nu'], df_rl['rl'], **LINE_STYLES[theory], label=f'$R_L$, $R_T$ {theory}')
 
             if theory.startswith('SuSAv2'):
                 df_rt = sheet_theory_rt.loc[(sheet_theory_rt['qv']==qvcenter) & (sheet_theory_rt['theory']=='SuSAv2')]
-                if theory.endswith('qe'):
-                    ax_rt.plot(df_rt['nu'], df_rt['rtqe'], **LINE_STYLES[theory])
-                elif theory.endswith('qe+2p2h'):
-                    ax_rt.plot(df_rt['nu'], df_rt['rtqe']+df_rt['rt2p2h'], **LINE_STYLES[theory])
-                elif theory.endswith('total'):
-                    ax_rl.plot(df_rt['nu'], df_rt['rt'], **LINE_STYLES[theory])
+                if len(df_rt) == 0:
+                    if theory.endswith('qe'):
+                        ax_rt.plot(df_rt['nu'], df_rt['rtqe'], **LINE_STYLES[theory])
+                    elif theory.endswith('qe+2p2h'):
+                        ax_rt.plot(df_rt['nu'], df_rt['rtqe']+df_rt['rt2p2h'], **LINE_STYLES[theory])
+                    elif theory.endswith('total'):
+                        ax_rl.plot(df_rt['nu'], df_rt['rt'], **LINE_STYLES[theory])
             else:
                 df_rt = sheet_theory_rt.loc[(sheet_theory_rt['qv']==qvcenter) & (sheet_theory_rt['theory']==theory)]
-                ax_rt.plot(df_rt['nu'], df_rt['rt'], **LINE_STYLES[theory])
+                if len(df_rt) == 0:
+                    ax_rt.plot(df_rt['nu'], df_rt['rt'], **LINE_STYLES[theory])
      
         # plot experiment data as scatter and error bars
         for exp in exp_plot_list:
