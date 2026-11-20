@@ -1382,7 +1382,7 @@ def vcoul(a: float, z: float) -> float:
 
 
 def nuccs12cs(z: float, a: float, beam_energy: float, scattered_energy: float,
-              scattering_angle_deg: float, state: int) -> float:
+              scattering_angle_deg: float, state: int, smearing_width: float = 0.001) -> float:
     """Return the 12C narrow-state cross section contribution in microbarn.
 
     Parameters
@@ -1399,6 +1399,9 @@ def nuccs12cs(z: float, a: float, beam_energy: float, scattered_energy: float,
         Electron scattering angle in degrees.
     state : int
         Narrow-state index. The Fortran driver sums over 2..21.
+    smearing_width : float
+        Smearing width for narrow-state peaks.
+        Default: 0.001
     """
     mp = 0.93827
     alpha = 7.29735e-03
@@ -1419,7 +1422,7 @@ def nuccs12cs(z: float, a: float, beam_energy: float, scattered_energy: float,
     if not (1 <= state <= 22):
         return 0.0
 
-    smearing_width = 0.00048 # fine resolution. Will see Yamaguchi peaks. Stay with this value.
+    # smearing_width = 0.00048 # fine resolution. Will see Yamaguchi peaks. Stay with this value.
     # smearing_width = 0.002 # coarse resolution. arXiv v3 uses this for paper supp. material xsec plotting.
 
     total_width = math.sqrt(smearing_width * smearing_width + state_width[state - 1] * state_width[state - 1])
@@ -1489,6 +1492,7 @@ def calculate_cross_section_point(
     z: float = 6.0,
     xvalc: Sequence[float] = XVALC,
     coulomb_correction: bool = True,
+    smearing_width: float = 0.001,
 ) -> Optional[dict]:
     """Calculate the inclusive cross section and its component pieces.
 
@@ -1509,6 +1513,9 @@ def calculate_cross_section_point(
     coulomb_correction : bool, optional
         If True, apply the same Coulomb energy shift and focusing factor used
         in `qemodplot_norm.f`.
+    smearing_width : float
+        Smearing width for narrow-state peaks.
+        Default: 0.001
 
     Returns
     -------
@@ -1573,7 +1580,7 @@ def calculate_cross_section_point(
 
     narrow_state_total = 0.0
     for state in range(2, 22):
-        narrow_state_total += nuccs12cs(z, a, beam_energy_effective, scattered_energy_effective, scattering_angle_deg, state) / 1000.0
+        narrow_state_total += nuccs12cs(z, a, beam_energy_effective, scattered_energy_effective, scattering_angle_deg, state, smearing_width) / 1000.0
     narrow_state_total = narrow_state_total / a
 
     cross_section_total = contribution_map['total_non_narrow'] + narrow_state_total
@@ -1623,6 +1630,7 @@ def calculate_cross_section_table(
     z: float = 6.0,
     xvalc: Sequence[float] = XVALC,
     coulomb_correction: bool = True,
+    smearing_width: float = 0.001,
 ) -> pd.DataFrame:
     """Evaluate the qemodplot_norm-style cross section on a table of points.
 
@@ -1642,6 +1650,9 @@ def calculate_cross_section_table(
         1-based fit parameter table used by `csfitcomp`.
     coulomb_correction : bool, optional
         If True, apply the same Coulomb shift used by the Fortran driver.
+    smearing_width : float
+        Smearing width for narrow-state peaks.
+        Default: 0.001
 
     Returns
     -------
@@ -1673,6 +1684,7 @@ def calculate_cross_section_table(
             z=z,
             xvalc=xvalc,
             coulomb_correction=coulomb_correction,
+            smearing_width=smearing_width,
         )
         if row is not None:
             rows.append(row)
