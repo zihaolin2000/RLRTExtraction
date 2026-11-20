@@ -59,13 +59,35 @@ LINE_STYLES = {
     'ACHILLES':{'color':'blue','linestyle':'dotted','lw':2.5, 'zorder':-1}
 }
 
+PLOT_LABELS = {
+    'GFMC':'$R_L$, $R_T$ GFMC',
+    'ED-RMF': '$R_L$(QE), $R_T$(QE) ED-RMF',
+    'EDRMF(QE)+SuSAv2(2p2h)': '$R_L$, $R_T$ EDRMF(QE)+SuSAv2(2p2h)',
+    'CFG': '$R_L$, $R_T$ Correlated-Fermi-Gas',
+    'STA-QMC': '$R_L$, $R_T$ STA-QMC',
+    'SuSAv2 total': '$R_L$, $R_T$ SuSAv2(total)',
+    'SuSAv2 qe': '$R_L$, $R_T$ SuSAv2(QE)',
+    'SuSAv2 qe+2p2h': '$R_L$, $R_T$ SuSAv2(QE+2p2h)',
+    'NuWro-SF': '$R_L$(QE), $R_T$(QE) NuWro-SF',
+    'NuWro-SF-FSI': '$R_L$(QE), $R_T$(QE) NuWro-SF-FSI',
+    'ACHILLES':'$R_L$(QE), $R_T$(QE) ACHILLES',
+    'Goldemberg':'$R_T$ Goldemberg',
+    'Yamaguchi':'$R_L$, $R_T$ Yamaguchi',
+    'Jourdan':'$R_L$, $R_T$ Jourdan',
+    'Barreau':'$R_L$, $R_T$ Barreau',
+    'Buki':'$R_L$, $R_T$ Buki',
+    'Sheren':'$R_L$, $R_T$ Alsalmi:2025',
+    'Baran':'$R_L$, $R_T$ Baran ($Q^2=0.1$ GeV$^2$/c$^2$)',
+    'Photo-production':'$R_T$ Photo-production\n($Q^2=0$ GeV$^2$/c$^2$)'
+}
+
 # plot vertical dash lines at invariant mass w = 0.93, 1.07, 1.23 GeV/c^2
 W_PLOT_LIST = [0.93, 1.07, 1.23]
 W_PLOT_COLORS = {0.93:'darkorange', 1.07:'turquoise', 1.23:'slateblue'}
 
 # plot hights
 RLRT_QVPLOT_HEIGHTS = {
-    0.1:[50.0,12],
+    0.1:[80.0,12],
     0.148:[90.0,27],
     0.167:[80.0,30],
     0.205:[80.0,35],
@@ -204,7 +226,7 @@ def plot_response_qvbin(df_this_analysis : pd.DataFrame, qvcenters : list[float]
             df_rl = sheet_mc_rl.loc[(sheet_mc_rl['qv']==qvcenter) & (sheet_mc_rl['mc']==mc)]
             df_rt = sheet_mc_rt.loc[(sheet_mc_rt['qv']==qvcenter) & (sheet_mc_rt['mc']==mc)]
             if len(df_rl) > 0:
-                ax_rl.plot(df_rl['nu'], df_rl['rl'], **LINE_STYLES[mc], label=f'$R_L$, $R_T$ {mc}')
+                ax_rl.plot(df_rl['nu'], df_rl['rl'], **LINE_STYLES[mc], label=PLOT_LABELS[mc])
             if len(df_rt) > 0:
                 ax_rt.plot(df_rt['nu'], df_rt['rt'], **LINE_STYLES[mc])
 
@@ -212,21 +234,21 @@ def plot_response_qvbin(df_this_analysis : pd.DataFrame, qvcenters : list[float]
         for theory in theory_plot_list:
             if theory.startswith('SuSAv2'):
                 df_rl = sheet_theory_rl.loc[(sheet_theory_rl['qv']==qvcenter) & (sheet_theory_rl['theory']=='SuSAv2')]
-                if len(df_rl) == 0:
+                if len(df_rl) > 0:
                     if theory.endswith('qe'):
-                        ax_rl.plot(df_rl['nu'], df_rl['rlqe'], **LINE_STYLES[theory], label=f'$R_L$, $R_T$ SuSAv2 (QE)')
+                        ax_rl.plot(df_rl['nu'], df_rl['rlqe'], **LINE_STYLES[theory], label=PLOT_LABELS[theory])
                     elif theory.endswith('qe+2p2h'):
-                        ax_rl.plot(df_rl['nu'], df_rl['rlqe']+df_rl['rl2p2h'], **LINE_STYLES[theory], label=f'$R_L$, $R_T$ SuSAv2 (QE+2p2h)')
+                        ax_rl.plot(df_rl['nu'], df_rl['rlqe']+df_rl['rl2p2h'], **LINE_STYLES[theory], label=PLOT_LABELS[theory])
                     elif theory.endswith('total'):
-                        ax_rl.plot(df_rl['nu'], df_rl['rl'], **LINE_STYLES[theory], label=f'$R_L$, $R_T$ SuSAv2 (total)')
+                        ax_rl.plot(df_rl['nu'], df_rl['rl'], **LINE_STYLES[theory], label=PLOT_LABELS[theory])
             else:
                 df_rl = sheet_theory_rl.loc[(sheet_theory_rl['qv']==qvcenter) & (sheet_theory_rl['theory']==theory)]
                 if len(df_rl) > 0:
-                    ax_rl.plot(df_rl['nu'], df_rl['rl'], **LINE_STYLES[theory], label=f'$R_L$, $R_T$ {theory}')
+                    ax_rl.plot(df_rl['nu'], df_rl['rl'], **LINE_STYLES[theory], label=PLOT_LABELS[theory])
 
             if theory.startswith('SuSAv2'):
                 df_rt = sheet_theory_rt.loc[(sheet_theory_rt['qv']==qvcenter) & (sheet_theory_rt['theory']=='SuSAv2')]
-                if len(df_rt) == 0:
+                if len(df_rt) > 0:
                     if theory.endswith('qe'):
                         ax_rt.plot(df_rt['nu'], df_rt['rtqe'], **LINE_STYLES[theory])
                     elif theory.endswith('qe+2p2h'):
@@ -235,7 +257,7 @@ def plot_response_qvbin(df_this_analysis : pd.DataFrame, qvcenters : list[float]
                         ax_rl.plot(df_rt['nu'], df_rt['rt'], **LINE_STYLES[theory])
             else:
                 df_rt = sheet_theory_rt.loc[(sheet_theory_rt['qv']==qvcenter) & (sheet_theory_rt['theory']==theory)]
-                if len(df_rt) == 0:
+                if len(df_rt) > 0:
                     ax_rt.plot(df_rt['nu'], df_rt['rt'], **LINE_STYLES[theory])
      
         # plot experiment data as scatter and error bars
@@ -247,7 +269,7 @@ def plot_response_qvbin(df_this_analysis : pd.DataFrame, qvcenters : list[float]
                 ax_rl.scatter(df_rl['nu'], df_rl['rl'], **SCATTER_STYLES[exp])
             if len(df_rt) > 0:
                 ax_rt.errorbar(df_rt['nu'], df_rt['rt'], yerr=df_rt['rterr'], **ERRORBAR_STYLES[exp])
-                ax_rt.scatter(df_rt['nu'], df_rt['rt'], **SCATTER_STYLES[exp], label=f'$R_L$, $R_T$ {exp}')
+                ax_rt.scatter(df_rt['nu'], df_rt['rt'], **SCATTER_STYLES[exp], label=PLOT_LABELS[exp])
 
         # plot this analysis
         df_qvbin = df_this_analysis.loc[df_this_analysis['qvcenter'] == qvcenter]
@@ -406,21 +428,23 @@ def plot_response_q2bin(df_this_analysis : pd.DataFrame, q2centers : list[float]
         for mc in mc_plot_list:
             df_rl = sheet_mc_rl.loc[(sheet_mc_rl['q2']==q2center) & (sheet_mc_rl['mc']==mc)]
             if len(df_rl) > 0:
-                ax_rl.plot(df_rl['nu'], df_rl['rl'], **LINE_STYLES[mc], label=f'$R_L$, $R_T$ {mc}')
+                ax_rl.plot(df_rl['nu'], df_rl['rl'], **LINE_STYLES[mc], label=PLOT_LABELS[mc])
 
         # plot theory as lines
         for theory in theory_plot_list:
             if theory.startswith('SuSAv2'):
                 df_rl = sheet_theory_rl.loc[(sheet_theory_rl['q2']==q2center) & (sheet_theory_rl['theory']=='SuSAv2')]
-                if theory.endswith('qe'):
-                    ax_rl.plot(df_rl['nu'], df_rl['rlqe'], **LINE_STYLES[theory], label=f'$R_L$, $R_T$ SuSAv2 (QE)')
-                elif theory.endswith('qe+2p2h'):
-                    ax_rl.plot(df_rl['nu'], df_rl['rlqe']+df_rl['rl2p2h'], **LINE_STYLES[theory], label=f'$R_L$, $R_T$ SuSAv2 (QE+2p2h)')
-                elif theory.endswith('total'):
-                    ax_rl.plot(df_rl['nu'], df_rl['rl'], **LINE_STYLES[theory], label=f'$R_L$, $R_T$ SuSAv2 (total)')
+                if len(df_rl) > 0:
+                    if theory.endswith('qe'):
+                        ax_rl.plot(df_rl['nu'], df_rl['rlqe'], **LINE_STYLES[theory], label=PLOT_LABELS[theory])
+                    elif theory.endswith('qe+2p2h'):
+                        ax_rl.plot(df_rl['nu'], df_rl['rlqe']+df_rl['rl2p2h'], **LINE_STYLES[theory], label=PLOT_LABELS[theory])
+                    elif theory.endswith('total'):
+                        ax_rl.plot(df_rl['nu'], df_rl['rl'], **LINE_STYLES[theory], label=PLOT_LABELS[theory])
             else:
                 df_rl = sheet_theory_rl.loc[(sheet_theory_rl['q2']==q2center) & (sheet_theory_rl['theory']==theory)]
-                ax_rl.plot(df_rl['nu'], df_rl['rl'], **LINE_STYLES[theory], label=f'$R_L$, $R_T$ {theory}')
+                if len(df_rl) > 0:
+                    ax_rl.plot(df_rl['nu'], df_rl['rl'], **LINE_STYLES[theory], label=PLOT_LABELS[theory])
         
         # plot experiment data as scatter and error bars
         for exp in exp_plot_list:
@@ -485,8 +509,10 @@ def plot_response_q2bin(df_this_analysis : pd.DataFrame, q2centers : list[float]
         for exp in exp_plot_list:
             df_rt = sheet_exp_rt.loc[(sheet_exp_rt['q2']==q2center) & (sheet_exp_rt['experiment']==exp)]
             if len(df_rt) > 0:
+                if exp == 'Photo-production':
+                    ax_rt.plot(df_rt['nu'], df_rt['rt'], color='gray', lw=0.5, alpha=0.5)
                 ax_rt.errorbar(df_rt['nu'], df_rt['rt'], yerr=df_rt['rterr'], **ERRORBAR_STYLES[exp])
-                ax_rt.scatter(df_rt['nu'], df_rt['rt'], **SCATTER_STYLES[exp], label=f'$R_L$, $R_T$ {exp}')
+                ax_rt.scatter(df_rt['nu'], df_rt['rt'], **SCATTER_STYLES[exp], label=PLOT_LABELS[exp])
 
         # plot this analysis
         df_q2bin = df_this_analysis.loc[df_this_analysis['q2center'] == q2center]
@@ -626,10 +652,10 @@ def plot_cross_section(df : pd.DataFrame, pdf_path : str):
                     inputs['e'] = e0
                     inputs['theta'] = theta
                     df_CB = calculate_cross_section_table(inputs)
-                    ax.plot(df_CB['nu'], df_CB['xs_total']*12*1000, label='CBfit total 2026', alpha=0.7)
-                    ax.plot(df_CB['nu'], df_CB['xs_qe']*12*1000, label='QE 2026', alpha=0.7, linestyle='-')
-                    ax.plot(df_CB['nu'], df_CB['xs_inelastic']*12*1000, label='inel 2026', alpha=0.7, linestyle='-')
-                    ax.plot(df_CB['nu'], df_CB['xs_mec']*12*1000, label='mec 2026', alpha=0.7, linestyle='-')
+                    ax.plot(df_CB['nu'], df_CB['xs_total']*12*1000, label='CBfit total', alpha=0.7)
+                    ax.plot(df_CB['nu'], df_CB['xs_qe']*12*1000, label='QE', alpha=0.7, linestyle='-')
+                    ax.plot(df_CB['nu'], df_CB['xs_inelastic']*12*1000, label='inel', alpha=0.7, linestyle='-')
+                    ax.plot(df_CB['nu'], df_CB['xs_mec']*12*1000, label='mec', alpha=0.7, linestyle='-')
                     # ax.plot(df_CB['nu'], df_CB['xs_narrow_states']*12*1000, alpha=0.7, linestyle='-')
 
                     ax.set_title(f'dataset={ds}:{DATASETS[ds]}, $E_0$={round(e0,5)}, $\\theta$={theta},\nnorm={round(NORMALIZATIONS[ds],4)}, norm_error={round(NORMALIZATION_ERRORS[ds],4)}, syst_error={round(SYSTEMATIC_ERRORS[ds],4)}')
