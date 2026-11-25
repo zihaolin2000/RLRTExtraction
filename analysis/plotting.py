@@ -323,6 +323,10 @@ def plot_response_qvbin(df_this_analysis : pd.DataFrame, qvcenters : list[float]
         axs[i, 1].set_xlim(0, qvcenter*1.05)
         axs[i, 1].set_ylim(0, RLRT_QVPLOT_HEIGHTS[qvcenter][1])
 
+        # add a horizontal line at y=0
+        axs[i,0].axhline(y=0, color='gray', alpha=0.5, lw=0.7)
+        axs[i,1].axhline(y=0, color='gray', alpha=0.5, lw=0.7)
+
         # # plot at a ylim that covers rl, also put a text showing nu location
         # df_qvbin = df_this_analysis.loc[df_this_analysis['qvcenter'] == qvcenter]
         # y_range = df_qvbin['rl'].max()-df_qvbin['rl'].min()
@@ -572,6 +576,10 @@ def plot_response_q2bin(df_this_analysis : pd.DataFrame, q2centers : list[float]
         axs[i, 1].minorticks_on()
         axs[i, 1].set_ylabel(r'$R_T$ (GeV$^{-1}$)')
         axs[i, 1].set_ylim(0, RLRT_Q2PLOT_HEIGHTS[q2center][1])
+
+        # add a horizontal line at y=0
+        axs[i,0].axhline(y=0, color='gray', alpha=0.5, lw=0.7)
+        axs[i,1].axhline(y=0, color='gray', alpha=0.5, lw=0.7)
 
          # put inset plot at top left corner
         nu_lowW = 0.025 + (0.93**2 + q2center - MASS_NUCLEON**2)/(2 * MASS_NUCLEON)
